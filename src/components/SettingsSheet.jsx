@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Check, Cloud, CloudOff, Download, Loader2, LogOut, Palette, RefreshCw, Smartphone, Tags, Trash2, Upload, X } from 'lucide-react';
+import { Check, CircleHelp, Cloud, CloudOff, Download, Loader2, LogOut, Palette, RefreshCw, Smartphone, Tags, Trash2, Upload, X } from 'lucide-react';
 import Sheet from './ui/Sheet';
 import { useLibrary } from '../context/LibraryContext';
 import { useToast } from '../context/ToastContext';
@@ -8,7 +8,7 @@ import { authErrorMessage } from '../lib/cloud';
 import { ACCENTS, DENSITIES, SURFACES } from '../lib/constants';
 import { cn } from '../lib/cn';
 
-export default function SettingsSheet({ open, onClose }) {
+export default function SettingsSheet({ open, onClose, onShowTour }) {
   return (
     <Sheet open={open} onClose={onClose} label="Settings">
       {({ close }) => (
@@ -21,7 +21,16 @@ export default function SettingsSheet({ open, onClose }) {
           >
             <X size={18} />
           </button>
-          <h2 className="text-xl font-extrabold tracking-tight">Settings</h2>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pr-10">
+            <h2 className="text-xl font-extrabold tracking-tight">Settings</h2>
+            <button
+              type="button"
+              onClick={onShowTour}
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-semibold text-accent-300 transition hover:bg-white/5 hover:text-accent-200"
+            >
+              <CircleHelp size={16} /> How SomeFolio works
+            </button>
+          </div>
           <AppearanceSection />
           <CloudSection />
           <BackupSection />

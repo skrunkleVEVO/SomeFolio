@@ -97,7 +97,7 @@ export function createEntry({ id, title, category = DEFAULT_CATEGORY, status = '
   return applyPatch(entry, statusPatch(entry, entry.status), now);
 }
 
-/** Entry for a search result (lib/anilist.js shape). Also used to preview a result before adding it. */
+/** Entry for a search result (lib/search.js shape). Also used to preview a result before adding it. */
 export function entryFromMedia(media, status = 'plan') {
   const { id, title, cover, category, ...details } = media;
   return createEntry({ id, title, category: category || 'anime', status, coverUrl: cover, metadata: { ...details, progress: 0 } });

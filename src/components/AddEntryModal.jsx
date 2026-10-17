@@ -10,20 +10,20 @@ import { STATUSES } from '../lib/constants';
 import { cn } from '../lib/cn';
 
 /** Manual "Add entry" form; its fields follow the chosen category. */
-export default function AddEntryModal({ open, onClose, defaultCategory, onOpenEntry }) {
+export default function AddEntryModal({ open, onClose, defaultCategory, defaultTitle, onOpenEntry }) {
   return (
     <Sheet open={open} onClose={onClose} label="Add entry">
-      {({ close }) => <AddForm close={close} defaultCategory={defaultCategory} onOpenEntry={onOpenEntry} />}
+      {({ close }) => <AddForm close={close} defaultCategory={defaultCategory} defaultTitle={defaultTitle} onOpenEntry={onOpenEntry} />}
     </Sheet>
   );
 }
 
-function AddForm({ close, defaultCategory, onOpenEntry }) {
+function AddForm({ close, defaultCategory, defaultTitle = '', onOpenEntry }) {
   const { addEntry } = useLibrary();
   const toast = useToast();
   const id = useId();
   const [category, setCategory] = useState(defaultCategory && defaultCategory !== 'all' ? defaultCategory : CATEGORIES[0].id);
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(defaultTitle);
   const [coverUrl, setCoverUrl] = useState('');
   const [status, setStatus] = useState('plan');
   const [notes, setNotes] = useState('');

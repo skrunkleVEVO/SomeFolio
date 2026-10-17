@@ -8,6 +8,8 @@
 //             holding the length; reaching it marks the entry Completed
 //   fields    category-specific inputs shown in the Add modal and Details drawer
 //   badge     which adaptive badge MediaCard shows (see components/EntryBadge.jsx)
+//   search    copy for the search box: { plural, starters } — the database
+//             itself is picked in lib/search.js; categories without one omit it
 //
 // Field types: text | number | select | tags. `list` gives suggestions (datalist);
 // `unit` formats a number in summaries ("12 episodes").
@@ -25,6 +27,7 @@ export const CATEGORIES = [
     verb: 'Watch',
     progress: { key: 'progress', total: 'episodes', unit: 'episode', short: 'Ep' },
     badge: 'episodes',
+    search: { plural: 'anime', starters: ["JoJo's Bizarre Adventure", 'Fate', 'Frieren', 'Attack on Titan', 'Spy x Family', 'Cowboy Bebop'] },
     fields: [
       { key: 'episodes', label: 'Episodes', type: 'number', unit: 'episode', min: 0, placeholder: '12' },
       { key: 'studio', label: 'Studio', type: 'text', placeholder: 'MAPPA' },
@@ -40,6 +43,7 @@ export const CATEGORIES = [
     verb: 'Read',
     progress: { key: 'progress', total: 'chapters', unit: 'chapter', short: 'Ch' },
     badge: 'bar',
+    search: { plural: 'manga', starters: ['One Piece', 'Berserk', 'Chainsaw Man', 'Vagabond', 'Blue Lock', 'Dungeon Meshi'] },
     fields: [
       { key: 'chapters', label: 'Chapters', type: 'number', unit: 'chapter', min: 0, placeholder: '120' },
       { key: 'volumes', label: 'Volumes', type: 'number', unit: 'volume', min: 0, placeholder: '14' },
@@ -55,6 +59,7 @@ export const CATEGORIES = [
     verb: 'Play',
     progress: { key: 'hoursPlayed', unit: 'hour', short: 'h' },
     badge: 'platform',
+    search: { plural: 'games', starters: ['Elden Ring', 'Hollow Knight', 'Persona 5', 'The Witcher 3', 'Hades', 'Stardew Valley'] },
     fields: [
       {
         key: 'platform',
@@ -76,6 +81,7 @@ export const CATEGORIES = [
     verb: 'Watch',
     progress: { key: 'progress', total: 'episodes', unit: 'episode', short: 'Ep' },
     badge: 'episodes',
+    search: { plural: 'movies & shows', starters: ['Dune', 'Breaking Bad', 'Severance', 'Arcane', 'Interstellar', 'The Bear'] },
     fields: [
       { key: 'format', label: 'Format', type: 'select', options: ['Movie', 'Series', 'Miniseries', 'Documentary'] },
       { key: 'episodes', label: 'Episodes', type: 'number', unit: 'episode', min: 0, placeholder: '10' },
@@ -91,6 +97,7 @@ export const CATEGORIES = [
     verb: 'Read',
     progress: { key: 'progress', total: 'chapters', unit: 'chapter', short: 'Ch' },
     badge: 'bar',
+    search: { plural: 'books', starters: ['Dune', 'The Hobbit', 'Project Hail Mary', 'Piranesi', 'The Name of the Wind', '1984'] },
     fields: [
       { key: 'author', label: 'Author', type: 'text', placeholder: 'Ursula K. Le Guin' },
       { key: 'chapters', label: 'Chapters', type: 'number', unit: 'chapter', min: 0, placeholder: '24' },

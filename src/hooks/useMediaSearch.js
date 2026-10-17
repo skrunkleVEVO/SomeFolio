@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { searchAnime } from '../lib/anilist';
+import { searchMedia } from '../lib/search';
 
 const IDLE = { results: [], loading: false, error: null };
 const OFFLINE_ERROR = "You're offline. Search needs a connection, but your library still works.";
 
-/** Debounced live search; cancels in-flight requests as the user keeps typing. */
-export function useAnimeSearch(query, delay = 350) {
+/** Debounced live search in one category's database; cancels in-flight requests as the user keeps typing. */
+export function useMediaSearch(query, category, delay = 350) {
   const [state, setState] = useState(IDLE);
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export function useAnimeSearch(query, delay = 350) {
     setState((s) => ({ ...s, loading: true, error: null }));
     const timer = setTimeout(async () => {
       try {
-        const results = await searchAnime(q, { signal: controller.signal });
+        const results = await searchMedia(category, q, { signal: controller.signal });
         setState({ results, loading: false, error: null });
       } catch (err) {
         if (err.name !== 'AbortError') {
@@ -35,7 +35,7 @@ export function useAnimeSearch(query, delay = 350) {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query, delay]);
+  }, [query, category, delay]);
 
   return state;
 }

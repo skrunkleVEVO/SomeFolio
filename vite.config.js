@@ -44,11 +44,14 @@ export default defineConfig({
             },
           },
           {
-            // Poster art. Capped because opaque responses count heavily
-            // against the storage quota.
+            // Poster art from every search source (see src/lib/search.js).
+            // Capped because opaque responses count heavily against the storage quota.
             urlPattern: ({ url, request }) =>
               request.destination === 'image' &&
-              ['s4.anilist.co', 'img.anili.st', 'cdn.myanimelist.net'].includes(url.hostname),
+              [
+                's4.anilist.co', 'img.anili.st', 'cdn.myanimelist.net', 'covers.openlibrary.org', 'books.google.com',
+                'image.tmdb.org', 'static.tvmaze.com', 'upload.wikimedia.org', 'media.rawg.io',
+              ].includes(url.hostname),
             handler: 'CacheFirst',
             options: {
               cacheName: 'posters',
@@ -57,7 +60,7 @@ export default defineConfig({
             },
           },
         ],
-        // API calls (AniList, Jikan, Firebase) are never cached: Firestore keeps
+        // API calls (search sources, Firebase) are never cached: Firestore keeps
         // its own offline cache in IndexedDB.
       },
     }),

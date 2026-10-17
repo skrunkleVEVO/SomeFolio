@@ -10,11 +10,14 @@ import FranchiseHub from './components/FranchiseHub';
 import Randomizer from './components/Randomizer';
 import SettingsSheet from './components/SettingsSheet';
 import AddEntryModal from './components/AddEntryModal';
+import WelcomeTour from './components/WelcomeTour';
 import { useLibrary } from './context/LibraryContext';
 import { useApplyTheme } from './hooks/useApplyTheme';
 import { useServiceWorker } from './hooks/useServiceWorker';
 import { categoryCounts, filterEntries, genresIn, matchesCategory, matchesTab, tabCounts } from './lib/filters';
 import { stackEntries } from './lib/franchises';
+import { hasSeenTour, markTourSeen } from './lib/onboarding';
+import { focusSearch } from './lib/search';
 
 export default function App() {
   const { entries, franchises, vibes, prefs, setPrefs } = useLibrary();
@@ -27,6 +30,8 @@ export default function App() {
   const [sort, setSort] = useState('updated');
   const [detail, setDetail] = useState(null);
   const [panel, setPanel] = useState(null); // 'random' | 'settings' | 'add' | null
+  const [addDraft, setAddDraft] = useState({}); // { category, title } prefilled in the Add form
+  const [tourOpen, setTourOpen] = useState(() => entries.length === 0 && !hasSeenTour()); // first visit only
   const [hubId, setHubId] = useState(null); // open franchise hub
   const [returnToHub, setReturnToHub] = useState(null); // hub to reopen when the detail sheet closes
 
@@ -48,13 +53,19 @@ export default function App() {
     setTab('all');
     setCategory('all');
   };
+  const openAdd = (draft = {}) => {
+    setAddDraft(draft);
+    setPanel('add');
+  };
 
   return (
     <div className="min-h-dvh">
       <Header
+        category={category}
         onSelectMedia={setDetail}
         onFilterTag={addTag}
-        onAdd={() => setPanel('add')}
+        onAdd={() => openAdd()}
+        onAddManual={(scope, title) => openAdd({ category: scope, title })}
         onRandomize={() => setPanel('random')}
         onSettings={() => setPanel('settings')}
       />
@@ -87,8 +98,10 @@ export default function App() {
           onOpen={setDetail}
           onOpenFranchise={(group) => setHubId(group.id)}
           isLibraryEmpty={entries.length === 0}
+          emptyCategory={category !== 'all' && inCategory.length === 0 ? category : null}
           onClearFilters={clearFilters}
-          onAdd={() => setPanel('add')}
+          onAdd={(cat) => openAdd({ category: cat })}
+          onShowTour={() => setTourOpen(true)}
           density={prefs.density}
           showCategory={category === 'all'}
         />
@@ -130,8 +143,29 @@ export default function App() {
           setDetail(entry);
         }}
       />
-      <SettingsSheet open={panel === 'settings'} onClose={() => setPanel(null)} />
-      <AddEntryModal open={panel === 'add'} onClose={() => setPanel(null)} defaultCategory={category} onOpenEntry={setDetail} />
+      <SettingsSheet
+        open={panel === 'settings'}
+        onClose={() => setPanel(null)}
+        onShowTour={() => {
+          setPanel(null);
+          setTourOpen(true);
+        }}
+      />
+      <AddEntryModal
+        open={panel === 'add'}
+        onClose={() => setPanel(null)}
+        defaultCategory={addDraft.category || category}
+        defaultTitle={addDraft.title}
+        onOpenEntry={setDetail}
+      />
+      <WelcomeTour
+        open={tourOpen}
+        onClose={() => {
+          setTourOpen(false);
+          markTourSeen();
+        }}
+        onStart={() => focusSearch(category)}
+      />
     </div>
   );
 }

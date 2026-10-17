@@ -11,6 +11,7 @@ import { CATEGORIES, detailLine, getCategory, progressOf, statusLabel } from '..
 import { STATUSES, STATUS_BY_ID } from '../lib/constants';
 import { entryFromMedia, progressPatch, statusPatch } from '../lib/entries';
 import { baseTitle } from '../lib/franchises';
+import { SOURCE_NAMES } from '../lib/search';
 import { cn } from '../lib/cn';
 
 /**
@@ -488,8 +489,6 @@ function RemoveButton({ onConfirm }) {
     </button>
   );
 }
-
-const SOURCE_NAMES = { jikan: 'MyAnimeList', anilist: 'AniList' };
 
 /** Link to the search source's page, or a custom entry's own link (http/https only). */
 function SourceLink({ item }) {

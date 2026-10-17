@@ -2,7 +2,8 @@
 
 A mobile-first, dark-mode anime tracker built with **React 19 + Vite + Tailwind CSS v4**. Installable as a PWA, deployable to GitHub Pages, with optional Firebase cloud sync on the free Spark plan.
 
-- **Live search**: AniList GraphQL as you type, with Jikan/MyAnimeList as a fallback. Picking a result fills in the poster, title, studio, episodes, genres and synopsis. Focusing the empty search box shows your recent searches (arrow keys, Enter, Delete to remove one, Clear history) and your library's most-used vibes and genres as one-tap filters.
+- **Live search** in every category, picked from a dropdown in the search bar that follows the category you're viewing: anime and manga from AniList (Jikan/MyAnimeList as a fallback), books from Open Library (Google Books as a fallback), movies and TV from TVmaze + Wikipedia, and games from Wikipedia. None of these need an API key. Optionally set `VITE_TMDB_KEY` ([TMDB](https://www.themoviedb.org/settings/api)) and/or `VITE_RAWG_KEY` ([RAWG](https://rawg.io/apidocs)) in `.env.local` or as repo secrets for richer movie/TV and game results. Picking a result fills in the poster, title, counts, genres and synopsis; "Can't find it?" opens the manual form with the title filled in.
+- **First-visit tour** that walks through searching, tracking and the dice, plus step-by-step empty states. Replay it from Settings → *How SomeFolio works*. Focusing the empty search box shows your recent searches (arrow keys, Enter, Delete to remove one, Clear history) and your library's most-used vibes and genres as one-tap filters.
 - **Franchise stacking**: split series such as JoJo's Bizarre Adventure or Fate collapse into one hub card with stacked posters. The hub lists every part in release order with quick +1, rename and ungroup. Grouping is detected from titles, and each title's detail sheet can set a franchise name or keep that title separate. Turn stacking on or off with **Stack franchises** next to the sort menu.
 - **Library**: a poster grid with tabs for Watching / Completed / Plan to Watch / On Hold / Favorites, sort options, and vibe + genre pill filters (Any/All matching).
 - **Detail sheet**: a bottom-sheet drawer on phones (drag to dismiss) and a modal on desktop, with +1 Episode, a status dropdown, favorite, half-star 1–10 rating, custom vibe tags and auto-saving notes.
@@ -77,12 +78,13 @@ src/
 │   ├── SearchResults.jsx       # Live results listbox
 │   ├── SearchSuggestions.jsx   # Recent searches + quick filter tags
 │   ├── DetailSheet.jsx         # Add / track / rate / tag / annotate
+│   ├── WelcomeTour.jsx         # First-visit walkthrough
 │   ├── Randomizer.jsx          # "What should I watch next?" spinner
 │   ├── SettingsSheet.jsx       # Appearance, cloud sync, backup, vibe editor
 │   └── ui/                     # Sheet (bottom sheet / modal), Pill, StarRating
 ├── context/                    # LibraryContext (state + actions), ToastContext
 ├── hooks/
-│   ├── useAnimeSearch.js       # Debounce + abort
+│   ├── useMediaSearch.js       # Debounce + abort, per category
 │   ├── useCloudSync.js         # Pull → merge → push loop (pauses while offline)
 │   ├── useServiceWorker.js     # Registers the service worker, offline-ready + update toasts
 │   ├── useOnlineStatus.js      # navigator.onLine as React state
@@ -90,7 +92,9 @@ src/
 │   ├── useQuickProgress.js     # Shared "+1 episode" with toast
 │   └── useApplyTheme.js        # Applies accent/background to <html>
 └── lib/
-    ├── anilist.js              # AniList + Jikan clients, normalisation
+    ├── search.js               # Per-category search sources (books, movies/TV, games), normalisation
+    ├── anilist.js              # AniList + Jikan clients for anime and manga
+    ├── onboarding.js           # "Tour seen" flag (this device only)
     ├── storage.js              # LocalStorage, validation, merge
     ├── franchises.js           # Franchise detection, grouping and stats
     ├── searchHistory.js        # Recent-search store

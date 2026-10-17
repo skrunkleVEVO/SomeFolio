@@ -2,7 +2,7 @@ import { BookMarked, Dices, Plus, Settings, WifiOff } from 'lucide-react';
 import SearchBar from './SearchBar';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 
-export default function Header({ onSelectMedia, onFilterTag, onAdd, onRandomize, onSettings }) {
+export default function Header({ category, onSelectMedia, onFilterTag, onAdd, onAddManual, onRandomize, onSettings }) {
   const online = useOnlineStatus();
   return (
     <header className="sticky top-0 z-30 border-b border-white/5 bg-zinc-950/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
@@ -15,7 +15,7 @@ export default function Header({ onSelectMedia, onFilterTag, onAdd, onRandomize,
         </a>
 
         <div className="order-last w-full md:order-none md:w-auto md:flex-1">
-          <SearchBar onSelect={onSelectMedia} onFilterTag={onFilterTag} />
+          <SearchBar category={category} onSelect={onSelectMedia} onFilterTag={onFilterTag} onAddManual={onAddManual} />
         </div>
 
         <div className="ml-auto flex items-center gap-2 md:ml-0">

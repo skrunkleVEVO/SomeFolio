@@ -51,9 +51,6 @@ export const DENSITIES = [
 
 export const DEFAULT_PREFS = { accent: 'neon', surface: 'midnight', density: 'comfortable', stackFranchises: true };
 
-// Shown in the search dropdown before the library has any tags to suggest.
-export const STARTER_SEARCHES = ["JoJo's Bizarre Adventure", 'Fate', 'Frieren', 'Attack on Titan', 'Spy x Family', 'Cowboy Bebop'];
-
 export const THEME_CACHE_KEY = 'somefolio:theme'; // read by the pre-paint script in index.html
 
 export const SORTS = [
