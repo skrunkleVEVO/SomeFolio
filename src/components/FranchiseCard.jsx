@@ -1,19 +1,20 @@
 import { Heart, Layers, Star } from 'lucide-react';
+import CoverArt from './ui/CoverArt';
 import { franchiseStats, partLabel } from '../lib/franchises';
 
 /**
- * Grid card for a franchise hub: the poster of the part you're watching (or the
+ * Grid card for a franchise hub: the poster of the part in progress (or the
  * latest one touched), with the other parts' posters stacked behind it.
  * The footprint matches MediaCard so grid rows stay aligned.
  */
 export default function FranchiseCard({ group, onOpen, compact = false }) {
   const stats = franchiseStats(group);
   const latest = [...group.entries].sort((a, b) => b.updatedAt - a.updatedAt);
-  const front = stats.watching[0] || latest[0];
+  const front = stats.inProgress[0] || latest[0];
   const behind = latest.filter((e) => e.id !== front.id).slice(0, 2);
   const pct = (stats.completed / stats.total) * 100;
-  const subline = stats.watching.length
-    ? `Watching · ${partLabel(stats.watching[0], group.name)}`
+  const subline = stats.inProgress.length
+    ? `In progress · ${partLabel(stats.inProgress[0], group.name)}`
     : `${stats.completed}/${stats.total} completed`;
 
   return (
@@ -32,20 +33,13 @@ export default function FranchiseCard({ group, onOpen, compact = false }) {
               key={layer}
               aria-hidden="true"
               className={`block h-1.5 shrink-0 rounded-t-xl bg-zinc-800 bg-cover bg-center ring-1 ring-white/10 brightness-75 ${layer ? 'mx-4' : 'mx-2'}`}
-              style={entry ? { backgroundColor: entry.color || undefined, backgroundImage: entry.cover ? `url("${entry.cover}")` : undefined } : undefined}
+              style={entry ? { backgroundColor: entry.metadata.color || undefined, backgroundImage: entry.coverUrl ? `url("${entry.coverUrl}")` : undefined } : undefined}
             />
           );
         })}
 
         <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl bg-zinc-900 ring-1 ring-accent-400/30 transition group-hover:shadow-2xl group-hover:shadow-black/60 group-hover:ring-accent-400/60">
-          <img
-            src={front.cover}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-            style={{ backgroundColor: front.color || '#27272a' }}
-          />
+          <CoverArt entry={front} iconSize={compact ? 24 : 36} className="h-full w-full transition duration-500 group-hover:scale-105" />
           <div className="absolute inset-0 bg-linear-to-t from-black via-black/30 to-transparent opacity-90" />
 
           <div className="absolute left-2 top-2 flex items-center gap-1.5">

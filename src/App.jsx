@@ -1,35 +1,40 @@
 import { useMemo, useState } from 'react';
 import { Dices } from 'lucide-react';
 import Header from './components/Header';
-import LibraryTabs from './components/LibraryTabs';
+import CategoryBar from './components/CategoryBar';
+import StatusFilter from './components/StatusFilter';
 import FilterBar from './components/FilterBar';
 import MediaGrid from './components/MediaGrid';
 import DetailSheet from './components/DetailSheet';
 import FranchiseHub from './components/FranchiseHub';
 import Randomizer from './components/Randomizer';
 import SettingsSheet from './components/SettingsSheet';
+import AddEntryModal from './components/AddEntryModal';
 import { useLibrary } from './context/LibraryContext';
 import { useApplyTheme } from './hooks/useApplyTheme';
 import { useServiceWorker } from './hooks/useServiceWorker';
-import { filterEntries, genresIn, matchesTab, tabCounts } from './lib/filters';
+import { categoryCounts, filterEntries, genresIn, matchesCategory, matchesTab, tabCounts } from './lib/filters';
 import { stackEntries } from './lib/franchises';
 
 export default function App() {
   const { entries, franchises, vibes, prefs, setPrefs } = useLibrary();
   useApplyTheme(prefs);
   useServiceWorker();
+  const [category, setCategory] = useState('all');
   const [tab, setTab] = useState('all');
   const [tags, setTags] = useState([]);
   const [matchAll, setMatchAll] = useState(false);
   const [sort, setSort] = useState('updated');
   const [detail, setDetail] = useState(null);
-  const [panel, setPanel] = useState(null); // 'random' | 'settings' | null
+  const [panel, setPanel] = useState(null); // 'random' | 'settings' | 'add' | null
   const [hubId, setHubId] = useState(null); // open franchise hub
   const [returnToHub, setReturnToHub] = useState(null); // hub to reopen when the detail sheet closes
 
-  const counts = useMemo(() => tabCounts(entries), [entries]);
-  const genres = useMemo(() => genresIn(entries.filter((e) => matchesTab(e, tab))), [entries, tab]);
-  const visible = useMemo(() => filterEntries(entries, { tab, tags, matchAll, sort }), [entries, tab, tags, matchAll, sort]);
+  const inCategory = useMemo(() => entries.filter((e) => matchesCategory(e, category)), [entries, category]);
+  const categoryTotals = useMemo(() => categoryCounts(entries), [entries]);
+  const counts = useMemo(() => tabCounts(inCategory), [inCategory]);
+  const genres = useMemo(() => genresIn(inCategory.filter((e) => matchesTab(e, tab))), [inCategory, tab]);
+  const visible = useMemo(() => filterEntries(inCategory, { tab, tags, matchAll, sort }), [inCategory, tab, tags, matchAll, sort]);
   const stacked = prefs.stackFranchises !== false;
   const items = useMemo(
     () => (stacked ? stackEntries(visible, franchises) : visible.map((entry) => ({ kind: 'entry', key: entry.id, entry }))),
@@ -41,6 +46,7 @@ export default function App() {
   const clearFilters = () => {
     setTags([]);
     setTab('all');
+    setCategory('all');
   };
 
   return (
@@ -48,12 +54,18 @@ export default function App() {
       <Header
         onSelectMedia={setDetail}
         onFilterTag={addTag}
+        onAdd={() => setPanel('add')}
         onRandomize={() => setPanel('random')}
         onSettings={() => setPanel('settings')}
       />
 
       <main className="mx-auto max-w-7xl px-4 pb-32 sm:px-6 md:pb-16">
-        <LibraryTabs value={tab} onChange={setTab} counts={counts} />
+        {entries.length > 0 && (
+          <>
+            <CategoryBar value={category} onChange={setCategory} counts={categoryTotals} />
+            <StatusFilter value={tab} onChange={setTab} counts={counts} category={category} />
+          </>
+        )}
         {entries.length > 0 && (
           <FilterBar
             vibes={vibes}
@@ -76,14 +88,16 @@ export default function App() {
           onOpenFranchise={(group) => setHubId(group.id)}
           isLibraryEmpty={entries.length === 0}
           onClearFilters={clearFilters}
+          onAdd={() => setPanel('add')}
           density={prefs.density}
+          showCategory={category === 'all'}
         />
       </main>
 
       <button
         type="button"
         onClick={() => setPanel('random')}
-        aria-label="What should I watch next?"
+        aria-label="What's next?"
         className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-5 z-20 grid size-14 place-items-center rounded-2xl bg-linear-to-br from-accent-500 to-accent2-600 text-white shadow-xl shadow-accent-500/40 transition active:scale-90 md:hidden"
       >
         <Dices size={26} />
@@ -109,6 +123,7 @@ export default function App() {
       />
       <Randomizer
         open={panel === 'random'}
+        category={category}
         onClose={() => setPanel(null)}
         onOpenEntry={(entry) => {
           setPanel(null);
@@ -116,6 +131,7 @@ export default function App() {
         }}
       />
       <SettingsSheet open={panel === 'settings'} onClose={() => setPanel(null)} />
+      <AddEntryModal open={panel === 'add'} onClose={() => setPanel(null)} defaultCategory={category} onOpenEntry={setDetail} />
     </div>
   );
 }

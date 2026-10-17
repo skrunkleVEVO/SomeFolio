@@ -6,13 +6,14 @@ import { useAnimeSearch } from '../hooks/useAnimeSearch';
 import { useSearchHistory } from '../hooks/useSearchHistory';
 import { useLibrary } from '../context/LibraryContext';
 import { STARTER_SEARCHES } from '../lib/constants';
+import { topicsOf } from '../lib/filters';
 
 const MAX_TAGS = 8;
 
-/** Vibes and genres used in the library, most used first. */
+/** Vibes, genres and custom tags used in the library, most used first. */
 function popularTags(entries) {
   const counts = new Map();
-  for (const e of entries) for (const t of [...(e.vibes || []), ...(e.genres || [])]) counts.set(t, (counts.get(t) || 0) + 1);
+  for (const e of entries) for (const t of [...e.vibes, ...topicsOf(e)]) counts.set(t, (counts.get(t) || 0) + 1);
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .slice(0, MAX_TAGS)

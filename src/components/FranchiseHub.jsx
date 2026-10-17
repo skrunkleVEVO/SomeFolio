@@ -1,20 +1,23 @@
 import { useState } from 'react';
 import { Check, Layers, Pencil, Plus, Star, Unlink, X } from 'lucide-react';
 import Sheet from './ui/Sheet';
+import { ProgressBar } from './EntryBadge';
+import CoverArt from './ui/CoverArt';
 import { useLibrary } from '../context/LibraryContext';
 import { useToast } from '../context/ToastContext';
 import { useQuickProgress } from '../hooks/useQuickProgress';
+import { getCategory, progressOf, progressText, statusLabel } from '../lib/categories';
 import { STATUS_BY_ID } from '../lib/constants';
 import { franchiseStats, normalizeName, partLabel } from '../lib/franchises';
 import { cn } from '../lib/cn';
 
 /**
- * Drawer listing every part of a franchise in release order, with quick +1,
+ * Drawer listing every part of a franchise in release order (across categories), with quick +1,
  * rename and ungroup. `onGroupIdChange` follows the hub when a rename changes its id.
  */
 export default function FranchiseHub({ group, onClose, onOpenEntry, onGroupIdChange }) {
   return (
-    <Sheet open={Boolean(group)} onClose={onClose} label={group ? `${group.name} franchise` : undefined}>
+    <Sheet open={Boolean(group)} onClose={onClose} label={group ? `${group.name} franchise` : undefined} variant="drawer">
       {({ close }) =>
         group && <HubBody key={group.id} group={group} close={close} onOpenEntry={onOpenEntry} onGroupIdChange={onGroupIdChange} />
       }
@@ -24,17 +27,14 @@ export default function FranchiseHub({ group, onClose, onOpenEntry, onGroupIdCha
 
 function HubBody({ group, close, onOpenEntry, onGroupIdChange }) {
   const stats = franchiseStats(group);
-  const cover = (stats.watching[0] || group.entries.at(-1)).cover;
-  const meta = [
-    `${stats.total} entries`,
-    `${stats.completed} completed`,
-    `${stats.watchedEpisodes}/${stats.totalEpisodes ?? '?'} episodes`,
-  ];
+  const front = stats.inProgress[0] || group.entries.at(-1);
+  const mixed = stats.categories.length > 1;
+  const meta = [`${stats.total} entries`, `${stats.completed} completed`, mixed && stats.categories.map((c) => getCategory(c).label).join(' + ')];
 
   return (
     <>
       <div className="relative overflow-hidden px-5 pb-5 pt-8 md:px-7 md:pt-7">
-        <img src={cover} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-125 object-cover opacity-40 blur-2xl" />
+        <CoverArt entry={front} eager className="absolute inset-0 h-full w-full scale-125 opacity-40 blur-2xl" />
         <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-zinc-950/70 to-zinc-950/30" />
         <button
           type="button"
@@ -50,7 +50,7 @@ function HubBody({ group, close, onOpenEntry, onGroupIdChange }) {
           </p>
           <TitleEditor group={group} onGroupIdChange={onGroupIdChange} />
           <p className="mt-1.5 text-xs font-medium text-zinc-400">
-            {meta.join(' · ')}
+            {meta.filter(Boolean).join(' · ')}
             {stats.avgRating > 0 && (
               <span className="ml-1.5 inline-flex items-center gap-0.5 text-amber-300">
                 · <Star size={11} className="fill-amber-300" aria-hidden="true" /> {stats.avgRating} avg
@@ -75,7 +75,14 @@ function HubBody({ group, close, onOpenEntry, onGroupIdChange }) {
 
       <ol className="space-y-1.5 px-3 md:px-5" aria-label="Parts in release order">
         {group.entries.map((entry, i) => (
-          <PartRow key={entry.id} index={i + 1} entry={entry} label={partLabel(entry, group.name)} onOpen={() => onOpenEntry(entry)} />
+          <PartRow
+            key={entry.id}
+            index={i + 1}
+            entry={entry}
+            label={partLabel(entry, group.name)}
+            showCategory={mixed}
+            onOpen={() => onOpenEntry(entry)}
+          />
         ))}
       </ol>
 
@@ -138,11 +145,12 @@ function TitleEditor({ group, onGroupIdChange }) {
   );
 }
 
-function PartRow({ index, entry, label, onOpen }) {
-  const addEpisode = useQuickProgress();
+function PartRow({ index, entry, label, showCategory, onOpen }) {
+  const addOne = useQuickProgress();
   const status = STATUS_BY_ID[entry.status];
-  const pct = entry.episodes ? Math.min(100, (entry.progress / entry.episodes) * 100) : 0;
-  const meta = [entry.year, entry.format, entry.episodes ? `Ep ${entry.progress}/${entry.episodes}` : entry.progress ? `Ep ${entry.progress}` : null];
+  const category = getCategory(entry.category);
+  const p = progressOf(entry);
+  const meta = [showCategory && category.label, entry.metadata.year, entry.metadata.format, p && progressText(p)];
 
   return (
     <li className="group relative flex items-center rounded-2xl transition hover:bg-white/[0.04]">
@@ -150,27 +158,17 @@ function PartRow({ index, entry, label, onOpen }) {
         <span className="w-5 shrink-0 text-center text-xs font-bold tabular-nums text-zinc-500" aria-hidden="true">
           {index}
         </span>
-        <img
-          src={entry.cover}
-          alt=""
-          loading="lazy"
-          className="h-16 w-11 shrink-0 rounded-md object-cover ring-1 ring-white/10"
-          style={{ backgroundColor: entry.color || '#27272a' }}
-        />
+        <CoverArt entry={entry} iconSize={18} className="h-16 w-11 shrink-0 rounded-md ring-1 ring-white/10" />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold text-zinc-100">{label}</span>
           <span className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-zinc-400">
             <span className={`size-1.5 shrink-0 rounded-full ${status?.dot}`} aria-hidden="true" />
-            {status?.label}
+            {statusLabel(status, entry.category)}
             {meta.filter(Boolean).map((m) => (
               <span key={m}>· {m}</span>
             ))}
           </span>
-          {(entry.status === 'watching' || entry.status === 'hold') && entry.episodes && (
-            <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-white/10">
-              <span className="block h-full rounded-full bg-linear-to-r from-accent-500 to-accent2-400" style={{ width: `${pct}%` }} />
-            </span>
-          )}
+          <ProgressBar entry={entry} className="mt-1.5 bg-white/10" />
         </span>
         {entry.rating > 0 && (
           <span className="flex shrink-0 items-center gap-0.5 text-xs font-semibold text-amber-300">
@@ -178,14 +176,15 @@ function PartRow({ index, entry, label, onOpen }) {
           </span>
         )}
       </button>
-      {entry.status === 'watching' && (
+      {entry.status === 'watching' && p && (
         <button
           type="button"
-          onClick={() => addEpisode(entry)}
-          aria-label={`Add one episode to ${entry.title}`}
+          onClick={() => addOne(entry)}
+          aria-label={`Add one ${p.spec.unit} to ${entry.title}`}
           className="mr-2 flex h-8 shrink-0 items-center gap-0.5 rounded-full bg-white/90 px-2.5 text-xs font-bold text-zinc-950 shadow-lg transition hover:bg-white active:scale-90"
         >
-          <Plus size={14} strokeWidth={3} />1
+          <Plus size={14} strokeWidth={3} />
+          {p.spec.short === 'h' ? '1h' : '1'}
         </button>
       )}
     </li>

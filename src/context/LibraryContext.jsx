@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
-import { createEntry } from '../lib/entries';
+import { applyPatch, createEntry } from '../lib/entries';
 import { buildFranchises } from '../lib/franchises';
 import { loadLibrary, mergeLibraries, normalizeLibrary, saveLibrary } from '../lib/storage';
 import { useCloudSync } from '../hooks/useCloudSync';
@@ -23,7 +23,7 @@ function reducer(state, action) {
     case 'update': {
       const entry = state.entries[action.id];
       if (!entry || entry.deleted) return state;
-      return { ...state, entries: { ...state.entries, [action.id]: { ...entry, ...action.patch, updatedAt: now } } };
+      return { ...state, entries: { ...state.entries, [action.id]: applyPatch(entry, action.patch, now) } };
     }
 
     case 'remove':
@@ -120,14 +120,16 @@ export function LibraryProvider({ children }) {
 
   const actions = useMemo(
     () => ({
-      addEntry(media, status = 'plan') {
-        const entry = createEntry(media, status);
+      /** `draft`: `{ title, category, status, coverUrl, notes, metadata }`; see lib/entries.js createEntry. */
+      addEntry(draft) {
+        const entry = createEntry(draft);
         dispatch({ type: 'add', entry });
         return entry;
       },
       restoreEntry(entry) {
         dispatch({ type: 'add', entry: { ...entry, updatedAt: Date.now() } });
       },
+      /** `patch.metadata` is merged into the entry's metadata; set a key to null to clear it. */
       updateEntry: (id, patch) => dispatch({ type: 'update', id, patch }),
       removeEntry: (id) => dispatch({ type: 'remove', id }),
       /** `name`: a franchise name, `null` to auto-detect, or `''` to keep the entries ungrouped. */

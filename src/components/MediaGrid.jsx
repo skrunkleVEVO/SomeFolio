@@ -1,4 +1,4 @@
-import { Clapperboard, FilterX } from 'lucide-react';
+import { FilterX, Plus, Shapes } from 'lucide-react';
 import MediaCard from './MediaCard';
 import FranchiseCard from './FranchiseCard';
 
@@ -9,17 +9,24 @@ const GRID = {
 };
 
 /** `items` come from lib/franchises `stackEntries`: `{ kind: 'entry', entry }` or `{ kind: 'franchise', group }`. */
-export default function MediaGrid({ items, onOpen, onOpenFranchise, isLibraryEmpty, onClearFilters, density = 'comfortable' }) {
+export default function MediaGrid({ items, onOpen, onOpenFranchise, isLibraryEmpty, onClearFilters, onAdd, density = 'comfortable', showCategory = false }) {
   if (isLibraryEmpty) {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center py-20 text-center">
         <span className="mb-5 grid size-16 place-items-center rounded-2xl bg-linear-to-br from-accent-500/20 to-accent2-500/20 ring-1 ring-accent-400/20">
-          <Clapperboard size={28} className="text-accent-300" />
+          <Shapes size={28} className="text-accent-300" />
         </span>
         <h2 className="text-xl font-bold">Your shelf is empty</h2>
         <p className="mt-2 text-sm text-zinc-400">
-          Search for an anime above — posters, studios, episode counts and synopses fill in automatically.
+          Search for an anime above and the details fill in automatically, or add a manga, game, movie, book or anything else by hand.
         </p>
+        <button
+          type="button"
+          onClick={onAdd}
+          className="mt-5 flex items-center gap-2 rounded-xl bg-linear-to-r from-accent-500 to-accent2-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-accent-500/25 transition hover:brightness-110 active:scale-95"
+        >
+          <Plus size={18} /> Add entry
+        </button>
       </div>
     );
   }
@@ -42,7 +49,7 @@ export default function MediaGrid({ items, onOpen, onOpenFranchise, isLibraryEmp
         item.kind === 'franchise' ? (
           <FranchiseCard key={item.key} group={item.group} onOpen={onOpenFranchise} compact={density === 'compact'} />
         ) : (
-          <MediaCard key={item.key} entry={item.entry} onOpen={onOpen} compact={density === 'compact'} />
+          <MediaCard key={item.key} entry={item.entry} onOpen={onOpen} compact={density === 'compact'} showCategory={showCategory} />
         ),
       )}
     </div>

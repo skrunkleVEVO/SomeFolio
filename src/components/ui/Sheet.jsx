@@ -4,12 +4,28 @@ import { cn } from '../../lib/cn';
 
 const CLOSE_MS = 220;
 
+const LAYOUTS = {
+  modal: {
+    root: 'md:items-center md:p-6',
+    panel: 'md:max-h-[88vh] md:max-w-2xl md:rounded-3xl',
+    open: 'md:animate-pop-in',
+    closing: 'md:animate-pop-out',
+  },
+  drawer: {
+    root: 'md:items-stretch md:justify-end md:p-3',
+    panel: 'md:h-full md:max-h-none md:max-w-xl md:rounded-3xl',
+    open: 'md:animate-drawer-in',
+    closing: 'md:animate-drawer-out',
+  },
+};
+
 /**
- * Bottom-sheet drawer on mobile (drag the handle down to dismiss),
- * centered modal from the `md` breakpoint up.
- * `children` may be a function receiving `{ close }` for animated closing.
+ * Bottom sheet on mobile (drag the handle down to dismiss). From the `md`
+ * breakpoint up, `variant="modal"` is a centered dialog and `"drawer"` slides in
+ * from the right. `children` may be a function receiving `{ close }` for animated closing.
  */
-export default function Sheet({ open, onClose, label, children, className }) {
+export default function Sheet({ open, onClose, label, children, className, variant = 'modal' }) {
+  const layout = LAYOUTS[variant] || LAYOUTS.modal;
   const [closing, setClosing] = useState(false);
   const [dragY, setDragY] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -73,7 +89,7 @@ export default function Sheet({ open, onClose, label, children, className }) {
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6">
+    <div className={cn('fixed inset-0 z-50 flex items-end justify-center', layout.root)}>
       <div
         aria-hidden="true"
         onClick={close}
@@ -88,8 +104,8 @@ export default function Sheet({ open, onClose, label, children, className }) {
         style={dragY ? { transform: `translateY(${dragY}px)` } : undefined}
         className={cn(
           'relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[28px] border border-white/10 bg-zinc-950 shadow-2xl shadow-black outline-none',
-          'md:max-h-[88vh] md:max-w-2xl md:rounded-3xl',
-          closing ? 'animate-sheet-down md:animate-pop-out' : 'animate-sheet-up md:animate-pop-in',
+          layout.panel,
+          closing ? cn('animate-sheet-down', layout.closing) : cn('animate-sheet-up', layout.open),
           !dragging && 'transition-transform duration-300',
           className,
         )}

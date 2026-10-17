@@ -37,11 +37,12 @@ export function normalizeName(name = '') {
 }
 
 function autoKeys(entry) {
-  const keys = [entry.title, entry.altTitle].filter(Boolean).map((t) => normalizeName(baseTitle(t)));
+  const keys = [entry.title, entry.metadata.altTitle].filter(Boolean).map((t) => normalizeName(baseTitle(t)));
   return [...new Set(keys.filter((k) => k.length >= 3))];
 }
 
-const byRelease = (a, b) => (a.year ?? Infinity) - (b.year ?? Infinity) || a.addedAt - b.addedAt;
+const releaseYear = (e) => Number(e.metadata.year) || Infinity;
+const byRelease = (a, b) => releaseYear(a) - releaseYear(b) || a.addedAt - b.addedAt;
 
 /**
  * Group live entries into franchises. Returns
@@ -140,20 +141,18 @@ export function partLabel(entry, groupName) {
   return title;
 }
 
-/** Totals shown on hub cards and in the hub sheet. */
+/** Totals shown on hub cards and in the hub sheet. A franchise can span categories (anime + manga). */
 export function franchiseStats(group) {
   const { entries } = group;
   const completed = entries.filter((e) => e.status === 'completed').length;
-  const watching = [...entries].filter((e) => e.status === 'watching').sort((a, b) => b.updatedAt - a.updatedAt);
+  const inProgress = [...entries].filter((e) => e.status === 'watching').sort((a, b) => b.updatedAt - a.updatedAt);
   const rated = entries.filter((e) => e.rating > 0);
-  const episodesKnown = entries.every((e) => e.episodes);
   return {
     total: entries.length,
     completed,
-    watching,
+    inProgress,
+    categories: [...new Set(entries.map((e) => e.category))],
     favorite: entries.some((e) => e.favorite),
-    watchedEpisodes: entries.reduce((sum, e) => sum + (e.progress || 0), 0),
-    totalEpisodes: episodesKnown ? entries.reduce((sum, e) => sum + e.episodes, 0) : null,
     avgRating: rated.length ? Math.round((rated.reduce((s, e) => s + e.rating, 0) / rated.length) * 10) / 10 : 0,
   };
 }

@@ -1,7 +1,11 @@
+// Ids predate categories (hence `watching` for "In Progress") and are kept so
+// existing libraries and other synced devices stay compatible. Category-aware
+// labels ("Reading", "Plan to Play") come from statusLabel() in lib/categories.js.
 export const STATUSES = [
-  { id: 'watching', label: 'Watching', dot: 'bg-emerald-400' },
+  { id: 'watching', label: 'In Progress', dot: 'bg-emerald-400' },
   { id: 'completed', label: 'Completed', dot: 'bg-sky-400' },
-  { id: 'plan', label: 'Plan to Watch', dot: 'bg-accent2-400' },
+  { id: 'backlog', label: 'Backlog', dot: 'bg-zinc-400' },
+  { id: 'plan', label: 'Planned', dot: 'bg-accent2-400' },
   { id: 'hold', label: 'On Hold', dot: 'bg-amber-400' },
 ];
 

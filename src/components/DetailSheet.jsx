@@ -1,22 +1,30 @@
 import { useId, useMemo, useState } from 'react';
-import { ChevronDown, ExternalLink, Heart, Layers, Minus, Plus, Trash2, X } from 'lucide-react';
+import { ChevronDown, ExternalLink, Heart, Layers, Minus, Plus, SlidersHorizontal, Trash2, X } from 'lucide-react';
 import Sheet from './ui/Sheet';
 import Pill from './ui/Pill';
 import StarRating from './ui/StarRating';
+import CoverArt from './ui/CoverArt';
+import MetadataFields, { inputClass, labelClass } from './MetadataFields';
 import { useLibrary } from '../context/LibraryContext';
 import { useToast } from '../context/ToastContext';
+import { CATEGORIES, detailLine, getCategory, progressOf, statusLabel } from '../lib/categories';
 import { STATUSES, STATUS_BY_ID } from '../lib/constants';
-import { progressPatch } from '../lib/entries';
+import { entryFromMedia, progressPatch, statusPatch } from '../lib/entries';
 import { baseTitle } from '../lib/franchises';
 import { cn } from '../lib/cn';
 
+/**
+ * Details drawer for a library entry, or a preview of a search result that
+ * isn't in the library yet (`media` without `metadata`).
+ */
 export default function DetailSheet({ media, onClose }) {
   const { getEntry } = useLibrary();
   const entry = media ? getEntry(media.id) : null;
-  const item = entry || media;
+  const preview = useMemo(() => (media && !media.metadata ? entryFromMedia(media) : media), [media]);
+  const item = entry || preview;
 
   return (
-    <Sheet open={Boolean(media)} onClose={onClose} label={item?.title}>
+    <Sheet open={Boolean(media)} onClose={onClose} label={item?.title} variant="drawer">
       {({ close }) => item && <DetailBody key={item.id} item={item} entry={entry} close={close} />}
     </Sheet>
   );
@@ -27,32 +35,25 @@ function DetailBody({ item, entry, close }) {
     <>
       <Hero item={item} close={close} />
       <div className="space-y-6 px-5 pb-4 pt-5 md:px-7">
-        {entry ? <TrackingPanel entry={entry} close={close} /> : <AddPanel media={item} />}
-        <Synopsis text={item.synopsis} />
-        {item.url && (
-          <a
-            href={item.url}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-300"
-          >
-            View on {item.source === 'jikan' ? 'MyAnimeList' : 'AniList'} <ExternalLink size={12} />
-          </a>
-        )}
+        {entry ? <TrackingPanel entry={entry} close={close} /> : <AddPanel preview={item} />}
+        <Synopsis text={item.metadata.synopsis} />
+        <SourceLink item={item} />
       </div>
     </>
   );
 }
 
 function Hero({ item, close }) {
-  const meta = [item.studio, item.year, item.format, item.episodes && `${item.episodes} episodes`].filter(Boolean);
+  const category = getCategory(item.category);
+  const Icon = category.icon;
+  const { banner, altTitle, score, genres } = item.metadata;
   return (
     <div className="relative">
       <div className="relative h-40 overflow-hidden md:h-48">
-        {item.banner ? (
-          <img src={item.banner} alt="" className="h-full w-full object-cover" />
+        {banner ? (
+          <img src={banner} alt="" className="h-full w-full object-cover" />
         ) : (
-          <img src={item.cover} alt="" className="h-full w-full scale-125 object-cover blur-2xl" />
+          <CoverArt entry={item} eager className="h-full w-full scale-125 blur-2xl" />
         )}
         <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-zinc-950/40 to-zinc-950/10" />
       </div>
@@ -65,26 +66,30 @@ function Hero({ item, close }) {
         <X size={18} />
       </button>
       <div className="relative -mt-24 flex items-end gap-4 px-5 md:px-7">
-        <img
-          src={item.cover}
-          alt={`${item.title} poster`}
-          className="aspect-[2/3] w-28 shrink-0 rounded-xl object-cover shadow-2xl shadow-black ring-1 ring-white/15 md:w-36"
-          style={{ backgroundColor: item.color || '#27272a' }}
+        <CoverArt
+          entry={item}
+          eager
+          alt={`${item.title} cover`}
+          iconSize={36}
+          className="aspect-[2/3] w-28 shrink-0 rounded-xl shadow-2xl shadow-black ring-1 ring-white/15 md:w-36"
         />
         <div className="min-w-0 pb-1">
+          <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-accent-300">
+            <Icon size={12} aria-hidden="true" /> {category.label}
+          </p>
           <h2 className="text-xl font-extrabold leading-tight tracking-tight md:text-2xl">{item.title}</h2>
-          {item.altTitle && <p className="mt-0.5 truncate text-sm text-zinc-400">{item.altTitle}</p>}
-          <p className="mt-1.5 text-xs font-medium text-zinc-400">{meta.join(' · ')}</p>
-          {item.score && (
+          {altTitle && <p className="mt-0.5 truncate text-sm text-zinc-400">{altTitle}</p>}
+          <p className="mt-1.5 text-xs font-medium text-zinc-400">{detailLine(item).join(' · ')}</p>
+          {score && (
             <p className="mt-1 text-xs text-zinc-500">
-              Community score <span className="font-semibold text-emerald-300">{item.score}%</span>
+              Community score <span className="font-semibold text-emerald-300">{score}%</span>
             </p>
           )}
         </div>
       </div>
-      {item.genres?.length > 0 && (
+      {genres?.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-1.5 px-5 md:px-7">
-          {item.genres.map((g) => (
+          {genres.map((g) => (
             <span key={g} className="rounded-full bg-white/5 px-2.5 py-1 text-[11px] font-medium text-zinc-300 ring-1 ring-white/10">
               {g}
             </span>
@@ -95,67 +100,45 @@ function Hero({ item, close }) {
   );
 }
 
-function AddPanel({ media }) {
+function AddPanel({ preview }) {
   const { addEntry } = useLibrary();
   const toast = useToast();
-  const order = ['plan', 'watching', 'completed', 'hold'];
+  const order = ['plan', 'watching', 'completed', 'backlog'];
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
       <p className="mb-3 text-sm font-semibold text-zinc-300">Add to your library</p>
       <div className="grid grid-cols-2 gap-2">
-        {order.map((id, i) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => {
-              addEntry(media, id);
-              toast(`Added to ${STATUS_BY_ID[id].label}`);
-            }}
-            className={cn(
-              'flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold transition active:scale-95',
-              i === 0
-                ? 'bg-linear-to-r from-accent-500 to-accent2-600 text-white shadow-lg shadow-accent-500/25 hover:brightness-110'
-                : 'bg-white/5 text-zinc-200 hover:bg-white/10',
-            )}
-          >
-            <span className={`size-2 rounded-full ${STATUS_BY_ID[id].dot}`} />
-            {STATUS_BY_ID[id].label}
-          </button>
-        ))}
+        {order.map((id, i) => {
+          const label = statusLabel(STATUS_BY_ID[id], preview.category);
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => {
+                addEntry({ ...preview, status: id });
+                toast(`Added to ${label}`);
+              }}
+              className={cn(
+                'flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold transition active:scale-95',
+                i === 0
+                  ? 'bg-linear-to-r from-accent-500 to-accent2-600 text-white shadow-lg shadow-accent-500/25 hover:brightness-110'
+                  : 'bg-white/5 text-zinc-200 hover:bg-white/10',
+              )}
+            >
+              <span className={`size-2 rounded-full ${STATUS_BY_ID[id].dot}`} />
+              {label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 }
 
 function TrackingPanel({ entry, close }) {
-  const { updateEntry, removeEntry, restoreEntry, vibes, addVibe } = useLibrary();
+  const { updateEntry, removeEntry, restoreEntry } = useLibrary();
   const toast = useToast();
-  const [newVibe, setNewVibe] = useState('');
   const status = STATUS_BY_ID[entry.status];
-  const pct = entry.episodes ? Math.min(100, (entry.progress / entry.episodes) * 100) : 0;
-
-  const step = (delta) => {
-    const { patch, completed, changed } = progressPatch(entry, delta);
-    if (!changed) return;
-    updateEntry(entry.id, patch);
-    if (completed) toast(`🎉 Finished ${entry.title}! Don't forget to rate it.`);
-  };
-
-  const toggleVibe = (vibe) => {
-    const own = entry.vibes || [];
-    updateEntry(entry.id, { vibes: own.includes(vibe) ? own.filter((v) => v !== vibe) : [...own, vibe] });
-  };
-
-  const createVibe = (e) => {
-    e.preventDefault();
-    const name = newVibe.trim();
-    if (!name) return;
-    const existing = vibes.find((v) => v.toLowerCase() === name.toLowerCase());
-    if (!existing) addVibe(name);
-    const tag = existing || name;
-    if (!entry.vibes?.includes(tag)) updateEntry(entry.id, { vibes: [...(entry.vibes || []), tag] });
-    setNewVibe('');
-  };
 
   const remove = () => {
     removeEntry(entry.id);
@@ -172,17 +155,12 @@ function TrackingPanel({ entry, close }) {
           <span className={`pointer-events-none absolute left-3.5 top-1/2 size-2 -translate-y-1/2 rounded-full ${status?.dot}`} />
           <select
             value={entry.status}
-            onChange={(e) => {
-              const next = e.target.value;
-              const patch = { status: next };
-              if (next === 'completed' && entry.episodes) patch.progress = entry.episodes;
-              updateEntry(entry.id, patch);
-            }}
+            onChange={(e) => updateEntry(entry.id, statusPatch(entry, e.target.value))}
             className="w-full appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pl-9 pr-9 text-base font-semibold text-zinc-100 outline-none transition focus:border-accent-400/60 md:text-sm"
           >
             {STATUSES.map((s) => (
               <option key={s.id} value={s.id} className="bg-zinc-900">
-                {s.label}
+                {statusLabel(s, entry.category)}
               </option>
             ))}
           </select>
@@ -202,42 +180,7 @@ function TrackingPanel({ entry, close }) {
         </button>
       </div>
 
-      {/* Progress */}
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Progress</p>
-            <p className="mt-0.5 text-2xl font-extrabold tabular-nums">
-              {entry.progress}
-              <span className="text-base font-semibold text-zinc-500"> / {entry.episodes ?? '?'}</span>
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => step(-1)}
-              disabled={entry.progress <= 0}
-              aria-label="Remove one episode"
-              className="grid size-11 place-items-center rounded-xl bg-white/5 text-zinc-300 transition hover:bg-white/10 active:scale-90 disabled:opacity-30"
-            >
-              <Minus size={18} />
-            </button>
-            <button
-              type="button"
-              onClick={() => step(1)}
-              disabled={Boolean(entry.episodes) && entry.progress >= entry.episodes}
-              className="flex h-11 items-center gap-1.5 rounded-xl bg-linear-to-r from-accent-500 to-accent2-600 px-4 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition hover:brightness-110 active:scale-95 disabled:opacity-40"
-            >
-              <Plus size={18} strokeWidth={3} /> 1 Episode
-            </button>
-          </div>
-        </div>
-        {entry.episodes && (
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-            <div className="h-full rounded-full bg-linear-to-r from-accent-500 to-accent2-400 transition-all duration-500" style={{ width: `${pct}%` }} />
-          </div>
-        )}
-      </div>
+      <ProgressPanel entry={entry} />
 
       {/* Rating */}
       <div>
@@ -245,28 +188,8 @@ function TrackingPanel({ entry, close }) {
         <StarRating value={entry.rating || 0} onChange={(rating) => updateEntry(entry.id, { rating })} />
       </div>
 
-      {/* Vibes */}
-      <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">Vibes</p>
-        <div className="flex flex-wrap gap-1.5">
-          {vibes.map((v) => (
-            <Pill key={v} tone="vibe" active={entry.vibes?.includes(v)} onClick={() => toggleVibe(v)}>
-              {v}
-            </Pill>
-          ))}
-          <form onSubmit={createVibe} className="flex">
-            <input
-              value={newVibe}
-              onChange={(e) => setNewVibe(e.target.value)}
-              placeholder="+ New vibe"
-              aria-label="Create a new vibe tag"
-              maxLength={28}
-              className="w-28 rounded-full border border-dashed border-white/20 bg-transparent px-3 py-1 text-base text-zinc-200 placeholder:text-zinc-500 outline-none focus:w-40 focus:border-accent-400/60 md:text-xs"
-            />
-          </form>
-        </div>
-      </div>
-
+      <DetailsEditor entry={entry} />
+      <VibesField entry={entry} />
       <FranchiseField key={entry.franchise ?? 'auto'} entry={entry} />
 
       {/* Notes */}
@@ -279,7 +202,7 @@ function TrackingPanel({ entry, close }) {
           value={entry.notes || ''}
           onChange={(e) => updateEntry(entry.id, { notes: e.target.value })}
           rows={4}
-          placeholder="Favorite episodes, thoughts, who recommended it…"
+          placeholder="Highlights, thoughts, who recommended it…"
           className="w-full resize-y rounded-xl border border-white/10 bg-white/[0.03] p-3 text-base leading-relaxed text-zinc-100 placeholder:text-zinc-600 outline-none transition focus:border-accent-400/60 md:text-sm"
         />
         <p className="mt-1 text-[11px] text-zinc-600">Saved automatically · added {new Date(entry.addedAt).toLocaleDateString()}</p>
@@ -287,6 +210,198 @@ function TrackingPanel({ entry, close }) {
 
       <RemoveButton onConfirm={remove} />
     </>
+  );
+}
+
+/** Episodes, chapters or hours, depending on the category. Hidden for categories without a counter. */
+function ProgressPanel({ entry }) {
+  const { updateEntry } = useLibrary();
+  const toast = useToast();
+  const p = progressOf(entry);
+  if (!p) return null;
+  const { spec, value, total, pct } = p;
+  const hours = spec.short === 'h';
+  const unit = spec.unit[0].toUpperCase() + spec.unit.slice(1);
+
+  const step = (delta) => {
+    const { patch, completed, changed } = progressPatch(entry, delta);
+    if (!changed) return;
+    updateEntry(entry.id, patch);
+    if (completed) toast(`🎉 Finished ${entry.title}! Don't forget to rate it.`);
+  };
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">{hours ? 'Time played' : `${unit}s`}</p>
+          <p className="mt-0.5 text-2xl font-extrabold tabular-nums">
+            {value}
+            <span className="text-base font-semibold text-zinc-500">{hours ? 'h' : ` / ${total ?? '?'}`}</span>
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => step(-1)}
+            disabled={value <= 0}
+            aria-label={`Remove one ${spec.unit}`}
+            className="grid size-11 place-items-center rounded-xl bg-white/5 text-zinc-300 transition hover:bg-white/10 active:scale-90 disabled:opacity-30"
+          >
+            <Minus size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => step(1)}
+            disabled={Boolean(total) && value >= total}
+            className="flex h-11 items-center gap-1.5 rounded-xl bg-linear-to-r from-accent-500 to-accent2-600 px-4 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition hover:brightness-110 active:scale-95 disabled:opacity-40"
+          >
+            <Plus size={18} strokeWidth={3} /> 1 {unit}
+          </button>
+        </div>
+      </div>
+      {total && (
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+          <div className="h-full rounded-full bg-linear-to-r from-accent-500 to-accent2-400 transition-all duration-500" style={{ width: `${pct}%` }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Collapsible editor for the title, cover, category and category-specific metadata. */
+function DetailsEditor({ entry }) {
+  const { updateEntry } = useLibrary();
+  const id = useId();
+  const [open, setOpen] = useState(false);
+  const category = getCategory(entry.category);
+
+  return (
+    <div className="rounded-2xl border border-white/10">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls={`${id}-panel`}
+        className="flex w-full items-center gap-2 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400 transition hover:text-zinc-200"
+      >
+        <SlidersHorizontal size={14} aria-hidden="true" /> Details
+        <ChevronDown size={16} className={cn('ml-auto transition', open && 'rotate-180')} aria-hidden="true" />
+      </button>
+      {open && (
+        <div id={`${id}-panel`} className="space-y-3 border-t border-white/10 p-4">
+          <CommitInput key={entry.title} id={`${id}-title`} label="Title" value={entry.title} required onCommit={(title) => updateEntry(entry.id, { title })} />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor={`${id}-category`} className={labelClass}>
+                Category
+              </label>
+              <div className="relative">
+                <select
+                  id={`${id}-category`}
+                  value={entry.category}
+                  onChange={(e) => updateEntry(entry.id, { category: e.target.value })}
+                  className={cn(inputClass, 'appearance-none pr-9')}
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c.id} value={c.id} className="bg-zinc-900">
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+              </div>
+            </div>
+            <CommitInput
+              key={entry.coverUrl}
+              id={`${id}-cover`}
+              label="Cover URL"
+              type="url"
+              placeholder="https://…"
+              value={entry.coverUrl}
+              onCommit={(coverUrl) => updateEntry(entry.id, { coverUrl })}
+            />
+          </div>
+          <MetadataFields
+            category={entry.category}
+            values={entry.metadata}
+            exclude={category.progress ? [category.progress.key] : []}
+            onChange={(key, value) => updateEntry(entry.id, { metadata: { [key]: value } })}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Text input that saves on blur or Enter, so a half-typed title or URL never syncs. */
+function CommitInput({ id, label, value, onCommit, required = false, ...props }) {
+  const [draft, setDraft] = useState(value);
+  const commit = () => {
+    const next = draft.trim();
+    if (required && !next) setDraft(value);
+    else if (next !== value) onCommit(next);
+  };
+  return (
+    <div>
+      <label htmlFor={id} className={labelClass}>
+        {label}
+      </label>
+      <input
+        id={id}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+        maxLength={500}
+        className={inputClass}
+        {...props}
+      />
+    </div>
+  );
+}
+
+function VibesField({ entry }) {
+  const { updateEntry, vibes, addVibe } = useLibrary();
+  const [newVibe, setNewVibe] = useState('');
+
+  const toggleVibe = (vibe) => {
+    const own = entry.vibes;
+    updateEntry(entry.id, { vibes: own.includes(vibe) ? own.filter((v) => v !== vibe) : [...own, vibe] });
+  };
+
+  const createVibe = (e) => {
+    e.preventDefault();
+    const name = newVibe.trim();
+    if (!name) return;
+    const existing = vibes.find((v) => v.toLowerCase() === name.toLowerCase());
+    if (!existing) addVibe(name);
+    const tag = existing || name;
+    if (!entry.vibes.includes(tag)) updateEntry(entry.id, { vibes: [...entry.vibes, tag] });
+    setNewVibe('');
+  };
+
+  return (
+    <div>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">Vibes</p>
+      <div className="flex flex-wrap gap-1.5">
+        {vibes.map((v) => (
+          <Pill key={v} tone="vibe" active={entry.vibes.includes(v)} onClick={() => toggleVibe(v)}>
+            {v}
+          </Pill>
+        ))}
+        <form onSubmit={createVibe} className="flex">
+          <input
+            value={newVibe}
+            onChange={(e) => setNewVibe(e.target.value)}
+            placeholder="+ New vibe"
+            aria-label="Create a new vibe tag"
+            maxLength={28}
+            className="w-28 rounded-full border border-dashed border-white/20 bg-transparent px-3 py-1 text-base text-zinc-200 placeholder:text-zinc-500 outline-none focus:w-40 focus:border-accent-400/60 md:text-xs"
+          />
+        </form>
+      </div>
+    </div>
   );
 }
 
@@ -310,7 +425,7 @@ function FranchiseField({ entry }) {
     ? `Stacked with ${others} other ${others === 1 ? 'entry' : 'entries'} in ${group.name}${group.manual ? '' : ' (auto-detected)'}.`
     : separate
       ? 'Always shown on its own card.'
-      : 'Entries with matching titles stack automatically.';
+      : 'Entries with matching titles stack automatically, across categories too.';
 
   return (
     <div>
@@ -371,6 +486,20 @@ function RemoveButton({ onConfirm }) {
     >
       <Trash2 size={15} /> {armed ? 'Tap again to remove' : 'Remove from library'}
     </button>
+  );
+}
+
+const SOURCE_NAMES = { jikan: 'MyAnimeList', anilist: 'AniList' };
+
+/** Link to the search source's page, or a custom entry's own link (http/https only). */
+function SourceLink({ item }) {
+  const { url, link, source } = item.metadata;
+  const href = url || link;
+  if (typeof href !== 'string' || !/^https?:\/\//i.test(href)) return null;
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-300">
+      {SOURCE_NAMES[source] ? `View on ${SOURCE_NAMES[source]}` : 'Open link'} <ExternalLink size={12} />
+    </a>
   );
 }
 
