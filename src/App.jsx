@@ -11,8 +11,10 @@ import Randomizer from './components/Randomizer';
 import SettingsSheet from './components/SettingsSheet';
 import AddEntryModal from './components/AddEntryModal';
 import WelcomeTour from './components/WelcomeTour';
+import SearchPage from './components/SearchPage';
 import { useLibrary } from './context/LibraryContext';
 import { useApplyTheme } from './hooks/useApplyTheme';
+import { useSearchPage } from './hooks/useSearchPage';
 import { useServiceWorker } from './hooks/useServiceWorker';
 import { categoryCounts, filterEntries, genresIn, matchesCategory, matchesTab, tabCounts } from './lib/filters';
 import { stackEntries } from './lib/franchises';
@@ -34,6 +36,7 @@ export default function App() {
   const [tourOpen, setTourOpen] = useState(() => entries.length === 0 && !hasSeenTour()); // first visit only
   const [hubId, setHubId] = useState(null); // open franchise hub
   const [returnToHub, setReturnToHub] = useState(null); // hub to reopen when the detail sheet closes
+  const { search, openSearch, closeSearch } = useSearchPage(); // full results page, replaces the library view
 
   const inCategory = useMemo(() => entries.filter((e) => matchesCategory(e, category)), [entries, category]);
   const categoryTotals = useMemo(() => categoryCounts(entries), [entries]);
@@ -47,7 +50,10 @@ export default function App() {
   );
 
   const toggleTag = (tag) => setTags((t) => (t.includes(tag) ? t.filter((x) => x !== tag) : [...t, tag]));
-  const addTag = (tag) => setTags((t) => (t.includes(tag) ? t : [...t, tag]));
+  const addTag = (tag) => {
+    closeSearch();
+    setTags((t) => (t.includes(tag) ? t : [...t, tag]));
+  };
   const clearFilters = () => {
     setTags([]);
     setTab('all');
@@ -62,7 +68,9 @@ export default function App() {
     <div className="min-h-dvh">
       <Header
         category={category}
+        search={search}
         onSelectMedia={setDetail}
+        onSearch={(query) => openSearch({ query, scope: 'all' })}
         onFilterTag={addTag}
         onAdd={() => openAdd()}
         onAddManual={(scope, title) => openAdd({ category: scope, title })}
@@ -71,40 +79,51 @@ export default function App() {
       />
 
       <main className="mx-auto max-w-7xl px-4 pb-32 sm:px-6 md:pb-16">
-        {entries.length > 0 && (
+        {search ? (
+          <SearchPage
+            query={search.query}
+            scope={search.scope}
+            onScope={(scope) => openSearch({ ...search, scope })}
+            onBack={closeSearch}
+            onOpen={setDetail}
+            onAddManual={(scope, title) => openAdd({ category: scope, title })}
+          />
+        ) : (
           <>
-            <CategoryBar value={category} onChange={setCategory} counts={categoryTotals} />
-            <StatusFilter value={tab} onChange={setTab} counts={counts} category={category} />
+            {entries.length > 0 && (
+              <>
+                <CategoryBar value={category} onChange={setCategory} counts={categoryTotals} />
+                <StatusFilter value={tab} onChange={setTab} counts={counts} category={category} />
+                <FilterBar
+                  vibes={vibes}
+                  genres={genres}
+                  selected={tags}
+                  onToggle={toggleTag}
+                  onClear={() => setTags([])}
+                  matchAll={matchAll}
+                  onMatchAll={setMatchAll}
+                  sort={sort}
+                  onSort={setSort}
+                  resultCount={visible.length}
+                  stacked={stacked}
+                  onStacked={franchises.groups.size ? (value) => setPrefs({ stackFranchises: value }) : undefined}
+                />
+              </>
+            )}
+            <MediaGrid
+              items={items}
+              onOpen={setDetail}
+              onOpenFranchise={(group) => setHubId(group.id)}
+              isLibraryEmpty={entries.length === 0}
+              emptyCategory={category !== 'all' && inCategory.length === 0 ? category : null}
+              onClearFilters={clearFilters}
+              onAdd={(cat) => openAdd({ category: cat })}
+              onShowTour={() => setTourOpen(true)}
+              density={prefs.density}
+              showCategory={category === 'all'}
+            />
           </>
         )}
-        {entries.length > 0 && (
-          <FilterBar
-            vibes={vibes}
-            genres={genres}
-            selected={tags}
-            onToggle={toggleTag}
-            onClear={() => setTags([])}
-            matchAll={matchAll}
-            onMatchAll={setMatchAll}
-            sort={sort}
-            onSort={setSort}
-            resultCount={visible.length}
-            stacked={stacked}
-            onStacked={franchises.groups.size ? (value) => setPrefs({ stackFranchises: value }) : undefined}
-          />
-        )}
-        <MediaGrid
-          items={items}
-          onOpen={setDetail}
-          onOpenFranchise={(group) => setHubId(group.id)}
-          isLibraryEmpty={entries.length === 0}
-          emptyCategory={category !== 'all' && inCategory.length === 0 ? category : null}
-          onClearFilters={clearFilters}
-          onAdd={(cat) => openAdd({ category: cat })}
-          onShowTour={() => setTourOpen(true)}
-          density={prefs.density}
-          showCategory={category === 'all'}
-        />
       </main>
 
       <button

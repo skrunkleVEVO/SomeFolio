@@ -3,8 +3,7 @@ import { ChevronDown, Plus, X } from 'lucide-react';
 import Sheet from './ui/Sheet';
 import CoverArt from './ui/CoverArt';
 import MetadataFields, { inputClass, labelClass } from './MetadataFields';
-import { useLibrary } from '../context/LibraryContext';
-import { useToast } from '../context/ToastContext';
+import { useAddEntry } from '../hooks/useEntryActions';
 import { CATEGORIES, getCategory, statusLabel } from '../lib/categories';
 import { STATUSES } from '../lib/constants';
 import { cn } from '../lib/cn';
@@ -19,8 +18,7 @@ export default function AddEntryModal({ open, onClose, defaultCategory, defaultT
 }
 
 function AddForm({ close, defaultCategory, defaultTitle = '', onOpenEntry }) {
-  const { addEntry } = useLibrary();
-  const toast = useToast();
+  const addEntry = useAddEntry();
   const id = useId();
   const [category, setCategory] = useState(defaultCategory && defaultCategory !== 'all' ? defaultCategory : CATEGORIES[0].id);
   const [title, setTitle] = useState(defaultTitle);
@@ -36,9 +34,8 @@ function AddForm({ close, defaultCategory, defaultTitle = '', onOpenEntry }) {
     if (!title.trim()) return;
     const keys = getCategory(category).fields.map((f) => f.key);
     const own = Object.fromEntries(keys.filter((k) => metadata[k] != null).map((k) => [k, metadata[k]]));
-    const entry = addEntry({ title, category, status, coverUrl, notes, metadata: own });
+    addEntry({ title, category, status, coverUrl, notes, metadata: own }, { open: onOpenEntry });
     close();
-    toast(`Added ${entry.title}`, { action: { label: 'Open', onClick: () => onOpenEntry(entry) } });
   };
 
   return (

@@ -12,7 +12,7 @@ const secondaryClass = 'flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2.
 
 const STEPS = [
   ['Pick a category', 'in the search bar: anime, manga, games, movies/TV or books.'],
-  ['Search a title', 'and tap a result. Covers and details fill in for you.'],
+  ['Search a title', 'and tap a result, or press Enter for every match. Covers and details fill in for you.'],
   ['Track it', 'with a status, +1 progress taps, ratings and vibes.'],
 ];
 

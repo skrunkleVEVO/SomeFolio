@@ -26,10 +26,13 @@ function popularTags(entries) {
 /**
  * Combobox with two modes: live results once 2+ characters are typed, and
  * recent searches + quick filters while the box is focused but empty. The
- * picker on the left chooses which database to search; it follows the
- * category open in the grid (Custom and All keep the last one).
+ * picker on the left chooses which database the live results come from; it
+ * follows the category open in the grid (Custom and All keep the last one).
+ * Enter or the search button opens the full results page (`onSubmit`) unless a
+ * result is highlighted with the arrow keys. `submitted` is that page's
+ * `{ query, scope }`, mirrored back into the box (null clears it).
  */
-export default function SearchBar({ category, onSelect, onFilterTag, onAddManual }) {
+export default function SearchBar({ category, submitted, onSelect, onSubmit, onFilterTag, onAddManual }) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
@@ -49,9 +52,14 @@ export default function SearchBar({ category, onSelect, onFilterTag, onAddManual
   const mode = query.trim().length >= 2 ? 'results' : 'suggestions';
   const options = mode === 'results' ? results : history;
 
-  useEffect(() => setActive(results.length ? 0 : -1), [results]);
+  useEffect(() => setActive(-1), [results]);
 
   useEffect(() => setScope((s) => scopeFor(category, s)), [category]);
+
+  useEffect(() => {
+    setQuery(submitted?.query ?? '');
+    if (submitted) setScope((s) => scopeFor(submitted.scope, s));
+  }, [submitted]);
 
   useEffect(
     () =>
@@ -91,11 +99,23 @@ export default function SearchBar({ category, onSelect, onFilterTag, onAddManual
     close();
   };
 
-  const searchFor = (q) => {
-    setQuery(q);
+  const clear = () => {
+    setQuery('');
     setActive(-1);
     setOpen(true);
     inputRef.current?.focus();
+  };
+
+  const submit = (q = query) => {
+    const text = q.trim().replace(/\s+/g, ' ');
+    if (text.length < 2) {
+      setOpen(true);
+      inputRef.current?.focus();
+      return;
+    }
+    addSearch(text);
+    close();
+    onSubmit(text, scope);
   };
 
   const filterBy = (tag) => {
@@ -121,11 +141,11 @@ export default function SearchBar({ category, onSelect, onFilterTag, onAddManual
       setActive((i) => Math.min(i + 1, options.length - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setActive((i) => Math.max(i - 1, mode === 'results' ? 0 : -1));
+      setActive((i) => Math.max(i - 1, -1));
     } else if (e.key === 'Enter' && open && options[active]) {
       e.preventDefault();
       if (mode === 'results') choose(results[active]);
-      else searchFor(history[active]);
+      else submit(history[active]);
     } else if (e.key === 'Delete' && mode === 'suggestions' && history[active]) {
       e.preventDefault();
       removeSearch(history[active]);
@@ -139,7 +159,13 @@ export default function SearchBar({ category, onSelect, onFilterTag, onAddManual
 
   return (
     <div ref={boxRef} className="relative">
-      <div className="flex items-stretch rounded-xl border border-white/10 bg-white/5 transition focus-within:border-accent-400/60 focus-within:bg-white/[0.07] focus-within:ring-4 focus-within:ring-accent-500/10">
+      <form
+        role="search"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+        className="flex items-stretch rounded-xl border border-white/10 bg-white/5 transition focus-within:border-accent-400/60 focus-within:bg-white/[0.07] focus-within:ring-4 focus-within:ring-accent-500/10">
         <label className="relative flex shrink-0 items-center gap-1.5 border-r border-white/10 pl-3 text-accent-200" title="Choose what to search">
           <ScopeIcon size={16} aria-hidden="true" />
           <span className="sr-only">Search in</span>
@@ -157,7 +183,6 @@ export default function SearchBar({ category, onSelect, onFilterTag, onAddManual
           <ChevronDown size={14} aria-hidden="true" className="pointer-events-none absolute right-2 text-zinc-400" />
         </label>
         <div className="relative min-w-0 flex-1">
-          <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
           <input
             ref={inputRef}
             type="search"
@@ -179,16 +204,16 @@ export default function SearchBar({ category, onSelect, onFilterTag, onAddManual
             aria-describedby={`${baseId}-hint`}
             autoComplete="off"
             enterKeyHint="search"
-            className="w-full bg-transparent py-2.5 pl-9 pr-10 text-base text-zinc-100 placeholder:text-zinc-500 outline-none md:text-sm [&::-webkit-search-cancel-button]:hidden"
+            className="w-full bg-transparent py-2.5 pl-3 pr-10 text-base text-zinc-100 placeholder:text-zinc-500 outline-none md:text-sm [&::-webkit-search-cancel-button]:hidden"
           />
           <span id={`${baseId}-hint`} className="sr-only">
-            Use the arrow keys to move through suggestions. Press Delete to remove a recent search.
+            Press Enter to see all results. Use the arrow keys to pick a suggestion, and Delete to remove a recent search.
           </span>
           <span className="absolute right-3 top-1/2 -translate-y-1/2">
             {loading ? (
               <Loader2 size={18} className="animate-spin text-zinc-500" aria-label="Searching" />
             ) : query ? (
-              <button type="button" aria-label="Clear search" onClick={() => searchFor('')} className="text-zinc-500 hover:text-zinc-200">
+              <button type="button" aria-label="Clear search" onClick={clear} className="text-zinc-500 hover:text-zinc-200">
                 <X size={18} />
               </button>
             ) : (
@@ -196,7 +221,15 @@ export default function SearchBar({ category, onSelect, onFilterTag, onAddManual
             )}
           </span>
         </div>
-      </div>
+        <button
+          type="submit"
+          aria-label="See all results"
+          title="See all results"
+          className="m-1 grid w-10 shrink-0 place-items-center rounded-lg bg-linear-to-br from-accent-500 to-accent2-600 text-white transition hover:brightness-110 active:scale-95"
+        >
+          <Search size={17} strokeWidth={2.5} />
+        </button>
+      </form>
 
       {open && (
         <div className="absolute inset-x-0 top-full z-40 mt-2 max-h-[65dvh] animate-pop-in overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-zinc-900/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl">
@@ -205,6 +238,7 @@ export default function SearchBar({ category, onSelect, onFilterTag, onAddManual
               query={query}
               category={scope}
               onAddManual={onAddManual ? addManually : undefined}
+              onSeeAll={() => submit()}
               results={results}
               loading={loading}
               error={error}
@@ -221,7 +255,7 @@ export default function SearchBar({ category, onSelect, onFilterTag, onAddManual
               listId={listId}
               optionId={optionId}
               onHover={setActive}
-              onPick={searchFor}
+              onPick={submit}
               onRemove={removeSearch}
               onClear={clearHistory}
               tags={onFilterTag ? tags : []}

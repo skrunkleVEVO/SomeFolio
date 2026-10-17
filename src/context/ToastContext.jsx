@@ -10,10 +10,12 @@ export function ToastProvider({ children }) {
   const dismiss = useCallback((id) => setToasts((list) => list.filter((t) => t.id !== id)), []);
 
   const toast = useCallback(
+    // `action` is one `{ label, onClick }` button, or an array of them.
     (message, { action, duration = 3200 } = {}) => {
       const id = Math.random().toString(36).slice(2);
       const persistent = !Number.isFinite(duration); // `duration: Infinity` stays until dismissed
-      setToasts((list) => [...list.slice(-2), { id, message, action, persistent }]);
+      const actions = [action].flat().filter(Boolean);
+      setToasts((list) => [...list.slice(-2), { id, message, actions, persistent }]);
       if (!persistent) setTimeout(() => dismiss(id), duration);
     },
     [dismiss],
@@ -31,18 +33,19 @@ export function ToastProvider({ children }) {
               className="pointer-events-auto flex animate-toast items-center gap-4 rounded-2xl border border-white/10 bg-zinc-900/95 px-4 py-3 text-sm text-zinc-100 shadow-2xl shadow-black/50 backdrop-blur"
             >
               <span>{t.message}</span>
-              {t.action && (
+              {t.actions.map((action) => (
                 <button
+                  key={action.label}
                   type="button"
                   onClick={() => {
-                    t.action.onClick();
+                    action.onClick();
                     dismiss(t.id);
                   }}
                   className="font-semibold text-accent-300 hover:text-accent-200"
                 >
-                  {t.action.label}
+                  {action.label}
                 </button>
-              )}
+              ))}
               {t.persistent && (
                 <button
                   type="button"

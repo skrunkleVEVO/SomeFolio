@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "SomeFolio — Anime Tracker",
+  "name": "SomeFolio — Media Tracker",
   "short_name": "SomeFolio",
-  "description": "Track, rate and annotate the anime you watch.",
+  "description": "Track, rate and annotate the anime, manga, games, movies, shows and books you love.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

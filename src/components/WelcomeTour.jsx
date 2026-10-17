@@ -12,7 +12,7 @@ const STEPS = [
   },
   {
     title: 'Search to add',
-    body: 'Pick a category on the left of the search bar, type a title and tap a result. Covers, episode or chapter counts and synopses fill in on their own.',
+    body: 'Pick a category on the left of the search bar, type a title and tap a result, or press Enter to see every match. Covers, episode or chapter counts and synopses fill in on their own.',
     art: SearchArt,
   },
   {

@@ -50,6 +50,28 @@ export function genresIn(entries) {
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([g]) => g);
 }
 
+const fold = (text) =>
+  String(text || '')
+    .normalize('NFKD')
+    .replace(/\p{Mn}/gu, '') // strip accents: “pokemon” finds “Pokémon”
+    .toLowerCase();
+
+/** Library entries matching free text (title, alt title, franchise, creator, tags), closest titles first. */
+export function searchLibrary(entries, query) {
+  const q = fold(query).trim().replace(/\s+/g, ' ');
+  const words = q.split(' ').filter(Boolean);
+  if (!words.length) return [];
+  const ranked = [];
+  for (const e of entries) {
+    const m = e.metadata;
+    const title = fold(e.title);
+    const text = [title, m.altTitle, e.franchise, m.author, m.studio, m.director, m.developer, ...(m.customTags || [])].map(fold).join(' ');
+    if (!words.every((w) => text.includes(w))) continue;
+    ranked.push([title === q ? 0 : title.startsWith(q) ? 1 : title.includes(q) ? 2 : 3, e]);
+  }
+  return ranked.sort((a, b) => a[0] - b[0] || a[1].title.localeCompare(b[1].title)).map(([, e]) => e);
+}
+
 export function timeAgo(date) {
   const s = Math.round((Date.now() - new Date(date).getTime()) / 1000);
   if (s < 45) return 'just now';

@@ -7,6 +7,7 @@ import CoverArt from './ui/CoverArt';
 import MetadataFields, { inputClass, labelClass } from './MetadataFields';
 import { useLibrary } from '../context/LibraryContext';
 import { useToast } from '../context/ToastContext';
+import { useAddEntry, useRemoveEntry } from '../hooks/useEntryActions';
 import { CATEGORIES, detailLine, getCategory, progressOf, statusLabel } from '../lib/categories';
 import { STATUSES, STATUS_BY_ID } from '../lib/constants';
 import { entryFromMedia, progressPatch, statusPatch } from '../lib/entries';
@@ -32,11 +33,16 @@ export default function DetailSheet({ media, onClose }) {
 }
 
 function DetailBody({ item, entry, close }) {
+  const removeEntry = useRemoveEntry();
+  const remove = () => {
+    removeEntry(entry);
+    close();
+  };
   return (
     <>
-      <Hero item={item} close={close} />
+      <Hero item={item} close={close} onRemove={entry ? remove : undefined} />
       <div className="space-y-6 px-5 pb-4 pt-5 md:px-7">
-        {entry ? <TrackingPanel entry={entry} close={close} /> : <AddPanel preview={item} />}
+        {entry ? <TrackingPanel entry={entry} /> : <AddPanel preview={item} />}
         <Synopsis text={item.metadata.synopsis} />
         <SourceLink item={item} />
       </div>
@@ -44,7 +50,7 @@ function DetailBody({ item, entry, close }) {
   );
 }
 
-function Hero({ item, close }) {
+function Hero({ item, close, onRemove }) {
   const category = getCategory(item.category);
   const Icon = category.icon;
   const { banner, altTitle, score, genres } = item.metadata;
@@ -58,14 +64,17 @@ function Hero({ item, close }) {
         )}
         <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-zinc-950/40 to-zinc-950/10" />
       </div>
-      <button
-        type="button"
-        onClick={close}
-        aria-label="Close"
-        className="absolute right-3 top-3 z-30 grid size-9 place-items-center rounded-full bg-black/50 text-white backdrop-blur transition hover:bg-black/70"
-      >
-        <X size={18} />
-      </button>
+      <div className="absolute right-3 top-3 z-30 flex gap-2">
+        {onRemove && <RemoveButton onConfirm={onRemove} />}
+        <button
+          type="button"
+          onClick={close}
+          aria-label="Close"
+          className="grid size-9 place-items-center rounded-full bg-black/50 text-white backdrop-blur transition hover:bg-black/70"
+        >
+          <X size={18} />
+        </button>
+      </div>
       <div className="relative -mt-24 flex items-end gap-4 px-5 md:px-7">
         <CoverArt
           entry={item}
@@ -102,8 +111,7 @@ function Hero({ item, close }) {
 }
 
 function AddPanel({ preview }) {
-  const { addEntry } = useLibrary();
-  const toast = useToast();
+  const addEntry = useAddEntry();
   const order = ['plan', 'watching', 'completed', 'backlog'];
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
@@ -115,10 +123,7 @@ function AddPanel({ preview }) {
             <button
               key={id}
               type="button"
-              onClick={() => {
-                addEntry({ ...preview, status: id });
-                toast(`Added to ${label}`);
-              }}
+              onClick={() => addEntry({ ...preview, status: id }, { message: `Added to ${label}` })}
               className={cn(
                 'flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold transition active:scale-95',
                 i === 0
@@ -136,16 +141,9 @@ function AddPanel({ preview }) {
   );
 }
 
-function TrackingPanel({ entry, close }) {
-  const { updateEntry, removeEntry, restoreEntry } = useLibrary();
-  const toast = useToast();
+function TrackingPanel({ entry }) {
+  const { updateEntry } = useLibrary();
   const status = STATUS_BY_ID[entry.status];
-
-  const remove = () => {
-    removeEntry(entry.id);
-    close();
-    toast(`Removed ${entry.title}`, { action: { label: 'Undo', onClick: () => restoreEntry(entry) }, duration: 5000 });
-  };
 
   return (
     <>
@@ -208,8 +206,6 @@ function TrackingPanel({ entry, close }) {
         />
         <p className="mt-1 text-[11px] text-zinc-600">Saved automatically · added {new Date(entry.addedAt).toLocaleDateString()}</p>
       </div>
-
-      <RemoveButton onConfirm={remove} />
     </>
   );
 }
@@ -473,6 +469,7 @@ function FranchiseField({ entry }) {
   );
 }
 
+/** Sits next to Close so an accidental add is one tap (plus a confirming tap) away from undone. */
 function RemoveButton({ onConfirm }) {
   const [armed, setArmed] = useState(false);
   return (
@@ -480,12 +477,15 @@ function RemoveButton({ onConfirm }) {
       type="button"
       onClick={() => (armed ? onConfirm() : setArmed(true))}
       onBlur={() => setArmed(false)}
+      aria-label={armed ? 'Tap again to remove from library' : 'Remove from library'}
+      title="Remove from library"
       className={cn(
-        'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition',
-        armed ? 'bg-rose-500/15 text-rose-300' : 'text-zinc-500 hover:text-rose-300',
+        'flex h-9 items-center justify-center gap-1.5 rounded-full text-sm font-semibold backdrop-blur transition',
+        armed ? 'bg-rose-600/90 px-3.5 text-white' : 'w-9 bg-black/50 text-white hover:bg-rose-600/80',
       )}
     >
-      <Trash2 size={15} /> {armed ? 'Tap again to remove' : 'Remove from library'}
+      <Trash2 size={16} aria-hidden="true" />
+      {armed && 'Remove?'}
     </button>
   );
 }

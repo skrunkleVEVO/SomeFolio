@@ -1,4 +1,4 @@
-import { PenLine } from 'lucide-react';
+import { CornerDownLeft, PenLine, Search } from 'lucide-react';
 import CoverArt from './ui/CoverArt';
 import { useLibrary } from '../context/LibraryContext';
 import { getCategory } from '../lib/categories';
@@ -6,8 +6,11 @@ import { STATUS_BY_ID } from '../lib/constants';
 import { resultFacts } from '../lib/search';
 import { cn } from '../lib/cn';
 
-/** Live results for the current query from the chosen category's database (see lib/search.js). */
-export default function SearchResults({ query, category, results, loading, error, active, listId, optionId, onHover, onChoose, onAddManual }) {
+/**
+ * Live results for the current query from the chosen category's database (see
+ * lib/search.js), under a "See all results" row that opens the full results page.
+ */
+export default function SearchResults({ query, category, results, loading, error, active, listId, optionId, onHover, onChoose, onAddManual, onSeeAll }) {
   const { getEntry } = useLibrary();
   const { noun } = getCategory(category);
   const manual = onAddManual && (
@@ -21,10 +24,27 @@ export default function SearchResults({ query, category, results, loading, error
     </button>
   );
 
+  const seeAll = (
+    <button
+      type="button"
+      onClick={onSeeAll}
+      className="mb-1 flex w-full items-center gap-2 rounded-xl px-2.5 py-2.5 text-left text-sm text-zinc-300 transition hover:bg-white/[0.07] hover:text-white"
+    >
+      <Search size={15} className="shrink-0 text-accent-300" aria-hidden="true" />
+      <span className="min-w-0 flex-1 truncate">
+        See all results for <span className="font-semibold text-zinc-100">“{query.trim()}”</span>
+      </span>
+      <kbd className="hidden items-center gap-1 rounded border border-white/10 px-1.5 py-0.5 text-[11px] text-zinc-500 md:inline-flex">
+        <CornerDownLeft size={11} aria-hidden="true" /> Enter
+      </kbd>
+    </button>
+  );
+
   if (error) return <p className="px-3 py-6 text-center text-sm text-rose-300">{error}</p>;
   if (!loading && results.length === 0) {
     return (
       <>
+        {seeAll}
         <p className="px-3 py-6 text-center text-sm text-zinc-400">
           No {noun} found for “{query.trim()}”.
         </p>
@@ -35,6 +55,7 @@ export default function SearchResults({ query, category, results, loading, error
 
   return (
     <>
+      {seeAll}
       <div id={listId} role="listbox" aria-label="Search results" aria-busy={loading}>
         {results.map((media, i) => {
           const inLibrary = getEntry(media.id);
