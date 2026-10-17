@@ -1,22 +1,16 @@
 import { Heart, Plus, Star } from 'lucide-react';
-import { useLibrary } from '../context/LibraryContext';
-import { useToast } from '../context/ToastContext';
+import { useQuickProgress } from '../hooks/useQuickProgress';
 import { STATUS_BY_ID } from '../lib/constants';
-import { progressPatch } from '../lib/entries';
 
 export default function MediaCard({ entry, onOpen, compact = false }) {
-  const { updateEntry } = useLibrary();
-  const toast = useToast();
+  const addEpisode = useQuickProgress();
   const status = STATUS_BY_ID[entry.status];
   const pct = entry.episodes ? Math.min(100, (entry.progress / entry.episodes) * 100) : 0;
   const showProgress = entry.status === 'watching' || entry.status === 'hold';
 
   const plusOne = (e) => {
     e.stopPropagation();
-    const { patch, completed, changed } = progressPatch(entry, 1);
-    if (!changed) return;
-    updateEntry(entry.id, patch);
-    toast(completed ? `🎉 Finished ${entry.title}!` : `${entry.title} · Episode ${patch.progress}`);
+    addEpisode(entry);
   };
 
   return (

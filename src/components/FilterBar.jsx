@@ -1,9 +1,22 @@
-import { Sparkles, X } from 'lucide-react';
+import { Layers, Sparkles, X } from 'lucide-react';
 import Pill from './ui/Pill';
 import { SORTS } from '../lib/constants';
 import { cn } from '../lib/cn';
 
-export default function FilterBar({ vibes, genres, selected, onToggle, onClear, matchAll, onMatchAll, sort, onSort, resultCount }) {
+export default function FilterBar({
+  vibes,
+  genres,
+  selected,
+  onToggle,
+  onClear,
+  matchAll,
+  onMatchAll,
+  sort,
+  onSort,
+  resultCount,
+  stacked,
+  onStacked, // omitted when the library has no franchises to stack
+}) {
   const extraSelected = selected.filter((t) => !vibes.includes(t) && !genres.includes(t));
 
   return (
@@ -54,6 +67,20 @@ export default function FilterBar({ vibes, genres, selected, onToggle, onClear, 
                 </button>
               ))}
             </div>
+          )}
+          {onStacked && (
+            <button
+              type="button"
+              aria-pressed={stacked}
+              onClick={() => onStacked(!stacked)}
+              title={stacked ? 'Show every season and part separately' : 'Stack seasons and parts of a franchise'}
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition',
+                stacked ? 'border-accent-400/40 bg-accent-400/10 text-accent-200' : 'border-white/10 text-zinc-400 hover:text-zinc-200',
+              )}
+            >
+              <Layers size={14} aria-hidden="true" /> Stack franchises
+            </button>
           )}
           <label className="sr-only" htmlFor="sort">
             Sort by

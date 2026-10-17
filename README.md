@@ -2,12 +2,14 @@
 
 A mobile-first, dark-mode anime tracker built with **React 19 + Vite + Tailwind CSS v4**. Installable as a PWA, deployable to GitHub Pages, with optional Firebase cloud sync on the free Spark plan.
 
-- **Live search**: AniList GraphQL as you type, with Jikan/MyAnimeList as a fallback. Picking a result fills in the poster, title, studio, episodes, genres and synopsis.
+- **Live search**: AniList GraphQL as you type, with Jikan/MyAnimeList as a fallback. Picking a result fills in the poster, title, studio, episodes, genres and synopsis. Focusing the empty search box shows your recent searches (arrow keys, Enter, Delete to remove one, Clear history) and your library's most-used vibes and genres as one-tap filters.
+- **Franchise stacking**: split series such as JoJo's Bizarre Adventure or Fate collapse into one hub card with stacked posters. The hub lists every part in release order with quick +1, rename and ungroup. Grouping is detected from titles, and each title's detail sheet can set a franchise name or keep that title separate. Turn stacking on or off with **Stack franchises** next to the sort menu.
 - **Library**: a poster grid with tabs for Watching / Completed / Plan to Watch / On Hold / Favorites, sort options, and vibe + genre pill filters (Any/All matching).
 - **Detail sheet**: a bottom-sheet drawer on phones (drag to dismiss) and a modal on desktop, with +1 Episode, a status dropdown, favorite, half-star 1–10 rating, custom vibe tags and auto-saving notes.
 - **Spin**: "What should I watch next?" picks at random from Plan to Watch, filtered by vibes/genres.
 - **Themes**: 8 accent palettes, 4 dark backgrounds (Midnight, AMOLED, Navy, Plum) and 3 card sizes, set under Settings → Appearance.
 - **Data**: LocalStorage by default, JSON export/import (merge or replace), and optional Firestore sync with per-title last-write-wins merging.
+- **Offline**: installable PWA. A Workbox service worker precaches the whole build and caches poster art, so your library opens with no connection. Edits made offline sync when you reconnect.
 
 ## Run locally
 
@@ -61,15 +63,19 @@ The web `apiKey` is meant to be public. The Firestore rules are what keep each a
 ```
 src/
 ├── App.jsx                     # Layout, tab/filter/sort state, sheet routing, theme
-├── main.jsx                    # Providers + service worker registration
+├── main.jsx                    # Providers
 ├── index.css                   # Tailwind theme, accent/background palettes, animations
 ├── components/
 │   ├── Header.jsx              # Logo, search, spin + settings buttons
-│   ├── SearchBar.jsx           # Debounced live search with keyboard navigation
+│   ├── SearchBar.jsx           # Search combobox: results or suggestions, keyboard navigation
 │   ├── LibraryTabs.jsx         # Status tabs with counts
 │   ├── FilterBar.jsx           # Vibe/genre pills, Any/All, sort
 │   ├── MediaGrid.jsx           # Responsive poster grid (3 densities) + empty states
 │   ├── MediaCard.jsx           # Poster card with quick +1
+│   ├── FranchiseCard.jsx       # Stacked hub card for a franchise
+│   ├── FranchiseHub.jsx        # Franchise drawer: parts in release order, rename, ungroup
+│   ├── SearchResults.jsx       # Live results listbox
+│   ├── SearchSuggestions.jsx   # Recent searches + quick filter tags
 │   ├── DetailSheet.jsx         # Add / track / rate / tag / annotate
 │   ├── Randomizer.jsx          # "What should I watch next?" spinner
 │   ├── SettingsSheet.jsx       # Appearance, cloud sync, backup, vibe editor
@@ -77,15 +83,21 @@ src/
 ├── context/                    # LibraryContext (state + actions), ToastContext
 ├── hooks/
 │   ├── useAnimeSearch.js       # Debounce + abort
-│   ├── useCloudSync.js         # Pull → merge → push loop
+│   ├── useCloudSync.js         # Pull → merge → push loop (pauses while offline)
+│   ├── useServiceWorker.js     # Registers the service worker, offline-ready + update toasts
+│   ├── useOnlineStatus.js      # navigator.onLine as React state
+│   ├── useSearchHistory.js     # Recent searches (LocalStorage, synced across tabs)
+│   ├── useQuickProgress.js     # Shared "+1 episode" with toast
 │   └── useApplyTheme.js        # Applies accent/background to <html>
 └── lib/
     ├── anilist.js              # AniList + Jikan clients, normalisation
     ├── storage.js              # LocalStorage, validation, merge
+    ├── franchises.js           # Franchise detection, grouping and stats
+    ├── searchHistory.js        # Recent-search store
     ├── firebase.js             # Lazy Firebase init (Auth + Firestore)
     ├── cloud.js                # Auth helpers + Firestore reads/writes
     ├── entries.js, filters.js, constants.js, cn.js
-public/                         # manifest, icons, service worker
+public/                         # manifest, icons (the service worker is generated at build time)
 firebase/firestore.rules        # + firebase.json for the Firebase CLI
 .github/workflows/deploy.yml
 ```
@@ -94,4 +106,5 @@ firebase/firestore.rules        # + firebase.json for the Firebase CLI
 
 - **Themes:** add an accent to `ACCENTS` in `src/lib/constants.js` and a matching `html[data-accent="…"]` block in `src/index.css`. Backgrounds work the same way, using `SURFACES` and `data-surface`.
 - **Default vibes and statuses:** `DEFAULT_VIBES` / `STATUSES` in `src/lib/constants.js`.
-- **Offline cache:** bump `VERSION` in `public/sw.js` if you change the caching rules.
+- **Franchise detection:** the title rules (subtitles, "Season 2", "Part 3", roman numerals, `Fate/…`) are in `SUFFIXES` and `baseTitle()` in `src/lib/franchises.js`. An entry's `franchise` field overrides them: `null` means auto-detect, a name groups it by that name, and `''` keeps it separate. It syncs like any other field.
+- **Offline cache:** caching rules live in the `VitePWA` block of `vite.config.js`. Every build generates a new `sw.js` that precaches all of `dist/`. Open users get a "new version available" toast with a Reload button. The service worker only runs in production builds, so test offline with `npm run build && npm run preview`, then DevTools → Network → Offline.

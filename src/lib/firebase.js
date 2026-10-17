@@ -16,7 +16,11 @@ let servicesPromise = null;
 export function getFirebase() {
   if (!cloudEnabled) return Promise.reject(new Error('Firebase is not configured.'));
   servicesPromise ??= (async () => {
-    const [{ initializeApp, getApps, getApp }, { getAuth }, { initializeFirestore, getFirestore }] = await Promise.all([
+    const [
+      { initializeApp, getApps, getApp },
+      { getAuth },
+      { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager },
+    ] = await Promise.all([
       import('firebase/app'),
       import('firebase/auth'),
       import('firebase/firestore'),
@@ -24,7 +28,13 @@ export function getFirebase() {
     const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
     let db;
     try {
-      db = initializeFirestore(app, { ignoreUndefinedProperties: true });
+      // IndexedDB cache shared by all open tabs: synced docs stay readable offline
+      // and queued writes survive a reload. Firestore falls back to an in-memory
+      // cache by itself where IndexedDB is unavailable (e.g. some private modes).
+      db = initializeFirestore(app, {
+        ignoreUndefinedProperties: true,
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+      });
     } catch {
       db = getFirestore(app); // already initialised (e.g. hot reload)
     }

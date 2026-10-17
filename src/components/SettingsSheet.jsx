@@ -172,19 +172,21 @@ function CloudSection() {
       syncing: 'Syncing…',
       synced: cloud.lastSynced ? `Synced ${timeAgo(cloud.lastSynced)}` : 'Synced',
       error: `Sync failed: ${cloud.error}`,
+      offline: 'Offline. Changes are saved here and will sync when you reconnect.',
     }[cloud.status];
+    const dot = { error: 'bg-rose-400', syncing: 'bg-amber-400', offline: 'bg-zinc-500' }[cloud.status] ?? 'bg-emerald-400';
     return (
       <Section icon={Cloud} title="Cloud sync">
         <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
           <p className="text-sm">
             Signed in as <span className="font-semibold">{cloud.user.email}</span>
           </p>
-          <p className={cn('flex items-center gap-2 text-xs', cloud.status === 'error' ? 'text-rose-300' : 'text-zinc-400')}>
-            <span className={cn('size-2 rounded-full', cloud.status === 'error' ? 'bg-rose-400' : cloud.status === 'syncing' ? 'bg-amber-400' : 'bg-emerald-400')} />
+          <p role="status" className={cn('flex items-center gap-2 text-xs', cloud.status === 'error' ? 'text-rose-300' : 'text-zinc-400')}>
+            <span aria-hidden="true" className={cn('size-2 shrink-0 rounded-full', dot)} />
             {statusText}
           </p>
           <div className="grid grid-cols-2 gap-2">
-            <button type="button" onClick={cloud.syncNow} disabled={cloud.status === 'syncing'} className={buttonClass}>
+            <button type="button" onClick={cloud.syncNow} disabled={cloud.status === 'syncing' || cloud.status === 'offline'} className={buttonClass}>
               <RefreshCw size={15} className={cloud.status === 'syncing' ? 'animate-spin' : ''} /> Sync now
             </button>
             <button type="button" onClick={cloud.signOut} className={buttonClass}>

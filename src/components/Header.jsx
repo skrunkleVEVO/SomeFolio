@@ -1,7 +1,9 @@
-import { BookMarked, Dices, Settings } from 'lucide-react';
+import { BookMarked, Dices, Settings, WifiOff } from 'lucide-react';
 import SearchBar from './SearchBar';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 
-export default function Header({ onSelectMedia, onRandomize, onSettings }) {
+export default function Header({ onSelectMedia, onFilterTag, onRandomize, onSettings }) {
+  const online = useOnlineStatus();
   return (
     <header className="sticky top-0 z-30 border-b border-white/5 bg-zinc-950/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 sm:px-6">
@@ -13,10 +15,19 @@ export default function Header({ onSelectMedia, onRandomize, onSettings }) {
         </a>
 
         <div className="order-last w-full md:order-none md:w-auto md:flex-1">
-          <SearchBar onSelect={onSelectMedia} />
+          <SearchBar onSelect={onSelectMedia} onFilterTag={onFilterTag} />
         </div>
 
         <div className="ml-auto flex items-center gap-2 md:ml-0">
+          {!online && (
+            <span
+              role="status"
+              title="Showing your saved library. Changes sync when you reconnect."
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-zinc-300"
+            >
+              <WifiOff size={14} aria-hidden="true" /> Offline
+            </span>
+          )}
           <button
             type="button"
             onClick={onRandomize}

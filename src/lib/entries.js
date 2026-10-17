@@ -23,6 +23,7 @@ export function createEntry(media, status = 'plan') {
     rating: 0,
     notes: '',
     vibes: [],
+    franchise: null, // null = auto-detect, '' = never group, else a franchise name (see lib/franchises.js)
     addedAt: now,
     updatedAt: now,
   };

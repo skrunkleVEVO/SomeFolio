@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ChevronDown, ExternalLink, Heart, Minus, Plus, Trash2, X } from 'lucide-react';
+import { useId, useMemo, useState } from 'react';
+import { ChevronDown, ExternalLink, Heart, Layers, Minus, Plus, Trash2, X } from 'lucide-react';
 import Sheet from './ui/Sheet';
 import Pill from './ui/Pill';
 import StarRating from './ui/StarRating';
@@ -7,6 +7,7 @@ import { useLibrary } from '../context/LibraryContext';
 import { useToast } from '../context/ToastContext';
 import { STATUSES, STATUS_BY_ID } from '../lib/constants';
 import { progressPatch } from '../lib/entries';
+import { baseTitle } from '../lib/franchises';
 import { cn } from '../lib/cn';
 
 export default function DetailSheet({ media, onClose }) {
@@ -266,6 +267,8 @@ function TrackingPanel({ entry, close }) {
         </div>
       </div>
 
+      <FranchiseField key={entry.franchise ?? 'auto'} entry={entry} />
+
       {/* Notes */}
       <div>
         <label htmlFor={`notes-${entry.id}`} className="mb-2 block text-xs font-semibold uppercase tracking-wider text-zinc-500">
@@ -284,6 +287,73 @@ function TrackingPanel({ entry, close }) {
 
       <RemoveButton onConfirm={remove} />
     </>
+  );
+}
+
+/** Pick, rename or opt out of the franchise this entry stacks under in the grid. */
+function FranchiseField({ entry }) {
+  const { franchises, setFranchise } = useLibrary();
+  const [draft, setDraft] = useState(entry.franchise || '');
+  const id = useId();
+  const group = franchises.groups.get(franchises.groupOf.get(entry.id));
+  const names = useMemo(() => [...franchises.groups.values()].map((g) => g.name), [franchises]);
+  const separate = entry.franchise === '';
+
+  const commit = () => {
+    const name = draft.trim();
+    if (name) setFranchise([entry.id], name);
+    else if (entry.franchise) setFranchise([entry.id], null); // cleared a manual name → back to auto
+  };
+
+  const others = group ? group.entries.length - 1 : 0;
+  const hint = group
+    ? `Stacked with ${others} other ${others === 1 ? 'entry' : 'entries'} in ${group.name}${group.manual ? '' : ' (auto-detected)'}.`
+    : separate
+      ? 'Always shown on its own card.'
+      : 'Entries with matching titles stack automatically.';
+
+  return (
+    <div>
+      <label htmlFor={`${id}-franchise`} className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+        <Layers size={13} aria-hidden="true" /> Franchise
+      </label>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          commit();
+          e.currentTarget.querySelector('input')?.blur();
+        }}
+        className="flex gap-2"
+      >
+        <input
+          id={`${id}-franchise`}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          list={`${id}-names`}
+          maxLength={80}
+          placeholder={separate ? 'Not grouped' : `Auto: ${group && !group.manual ? group.name : baseTitle(entry.title)}`}
+          aria-describedby={`${id}-hint`}
+          className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-base text-zinc-100 placeholder:text-zinc-500 outline-none transition focus:border-accent-400/60 md:text-sm"
+        />
+        <datalist id={`${id}-names`}>
+          {names.map((n) => (
+            <option key={n} value={n} />
+          ))}
+        </datalist>
+        <button
+          type="button"
+          onClick={() => setFranchise([entry.id], separate ? null : '')}
+          aria-pressed={separate}
+          className="shrink-0 rounded-xl bg-white/5 px-3 text-xs font-semibold text-zinc-300 transition hover:bg-white/10 hover:text-white"
+        >
+          {separate ? 'Allow grouping' : 'Keep separate'}
+        </button>
+      </form>
+      <p id={`${id}-hint`} className="mt-1 text-[11px] text-zinc-500">
+        {hint}
+      </p>
+    </div>
   );
 }
 

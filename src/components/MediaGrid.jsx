@@ -1,5 +1,6 @@
 import { Clapperboard, FilterX } from 'lucide-react';
 import MediaCard from './MediaCard';
+import FranchiseCard from './FranchiseCard';
 
 const GRID = {
   compact: 'grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8',
@@ -7,7 +8,8 @@ const GRID = {
   large: 'grid-cols-2 gap-4 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
 };
 
-export default function MediaGrid({ entries, onOpen, isLibraryEmpty, onClearFilters, density = 'comfortable' }) {
+/** `items` come from lib/franchises `stackEntries`: `{ kind: 'entry', entry }` or `{ kind: 'franchise', group }`. */
+export default function MediaGrid({ items, onOpen, onOpenFranchise, isLibraryEmpty, onClearFilters, density = 'comfortable' }) {
   if (isLibraryEmpty) {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center py-20 text-center">
@@ -22,7 +24,7 @@ export default function MediaGrid({ entries, onOpen, isLibraryEmpty, onClearFilt
     );
   }
 
-  if (entries.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="flex flex-col items-center py-16 text-center text-zinc-400">
         <FilterX size={28} className="mb-3 text-zinc-500" />
@@ -36,9 +38,13 @@ export default function MediaGrid({ entries, onOpen, isLibraryEmpty, onClearFilt
 
   return (
     <div className={`grid ${GRID[density] || GRID.comfortable}`}>
-      {entries.map((entry) => (
-        <MediaCard key={entry.id} entry={entry} onOpen={onOpen} compact={density === 'compact'} />
-      ))}
+      {items.map((item) =>
+        item.kind === 'franchise' ? (
+          <FranchiseCard key={item.key} group={item.group} onOpen={onOpenFranchise} compact={density === 'compact'} />
+        ) : (
+          <MediaCard key={item.key} entry={item.entry} onOpen={onOpen} compact={density === 'compact'} />
+        ),
+      )}
     </div>
   );
 }

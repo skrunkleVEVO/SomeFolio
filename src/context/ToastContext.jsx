@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { X } from 'lucide-react';
 
 const ToastContext = createContext(() => {});
 
@@ -11,8 +12,9 @@ export function ToastProvider({ children }) {
   const toast = useCallback(
     (message, { action, duration = 3200 } = {}) => {
       const id = Math.random().toString(36).slice(2);
-      setToasts((list) => [...list.slice(-2), { id, message, action }]);
-      setTimeout(() => dismiss(id), duration);
+      const persistent = !Number.isFinite(duration); // `duration: Infinity` stays until dismissed
+      setToasts((list) => [...list.slice(-2), { id, message, action, persistent }]);
+      if (!persistent) setTimeout(() => dismiss(id), duration);
     },
     [dismiss],
   );
@@ -39,6 +41,16 @@ export function ToastProvider({ children }) {
                   className="font-semibold text-accent-300 hover:text-accent-200"
                 >
                   {t.action.label}
+                </button>
+              )}
+              {t.persistent && (
+                <button
+                  type="button"
+                  onClick={() => dismiss(t.id)}
+                  aria-label="Dismiss"
+                  className="-mr-1 grid size-6 place-items-center rounded-lg text-zinc-400 hover:bg-white/10 hover:text-white"
+                >
+                  <X size={15} />
                 </button>
               )}
             </div>

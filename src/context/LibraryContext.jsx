@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import { createEntry } from '../lib/entries';
+import { buildFranchises } from '../lib/franchises';
 import { loadLibrary, mergeLibraries, normalizeLibrary, saveLibrary } from '../lib/storage';
 import { useCloudSync } from '../hooks/useCloudSync';
 
@@ -27,6 +28,18 @@ function reducer(state, action) {
 
     case 'remove':
       return { ...state, entries: { ...state.entries, [action.id]: tombstone(action.id, now) } };
+
+    case 'setFranchise': {
+      // One action for many entries so renaming a franchise is a single update.
+      const changed = action.ids.filter((id) => {
+        const e = state.entries[id];
+        return e && !e.deleted && (e.franchise ?? null) !== action.name;
+      });
+      if (!changed.length) return state;
+      const entries = { ...state.entries };
+      for (const id of changed) entries[id] = { ...entries[id], franchise: action.name, updatedAt: now };
+      return { ...state, entries };
+    }
 
     case 'addVibe': {
       const name = action.name.trim();
@@ -95,6 +108,7 @@ export function LibraryProvider({ children }) {
   const cloud = useCloudSync(library, dispatch);
 
   const entries = useMemo(() => Object.values(library.entries).filter((e) => !e.deleted), [library.entries]);
+  const franchises = useMemo(() => buildFranchises(entries), [entries]);
 
   const getEntry = useCallback(
     (id) => {
@@ -116,6 +130,8 @@ export function LibraryProvider({ children }) {
       },
       updateEntry: (id, patch) => dispatch({ type: 'update', id, patch }),
       removeEntry: (id) => dispatch({ type: 'remove', id }),
+      /** `name`: a franchise name, `null` to auto-detect, or `''` to keep the entries ungrouped. */
+      setFranchise: (ids, name) => dispatch({ type: 'setFranchise', ids, name }),
       addVibe: (name) => dispatch({ type: 'addVibe', name }),
       renameVibe: (from, to) => dispatch({ type: 'renameVibe', from, to }),
       removeVibe: (name) => dispatch({ type: 'removeVibe', name }),
@@ -136,8 +152,8 @@ export function LibraryProvider({ children }) {
   );
 
   const value = useMemo(
-    () => ({ entries, vibes: library.vibes, prefs: library.prefs, getEntry, cloud, ...actions }),
-    [entries, library.vibes, library.prefs, getEntry, cloud, actions],
+    () => ({ entries, franchises, vibes: library.vibes, prefs: library.prefs, getEntry, cloud, ...actions }),
+    [entries, franchises, library.vibes, library.prefs, getEntry, cloud, actions],
   );
 
   return <LibraryContext.Provider value={value}>{children}</LibraryContext.Provider>;

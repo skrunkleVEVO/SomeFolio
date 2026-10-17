@@ -13,6 +13,7 @@ import {
   signUp,
 } from '../lib/cloud';
 import { librarySignature, mergeLibraries } from '../lib/storage';
+import { useOnlineStatus } from './useOnlineStatus';
 
 const PUSH_DEBOUNCE_MS = 1500;
 const syncKey = (uid) => `somefolio:sync:${uid}`;
@@ -41,13 +42,15 @@ function saveSyncState(uid, state) {
 
 /**
  * Keeps the local library in sync with Firestore: pull → merge → push on sign-in,
- * shortly after every local change, and whenever the app returns to the foreground.
+ * shortly after every local change, and whenever the app returns to the foreground
+ * or reconnects. While offline, edits stay in LocalStorage and sync on reconnect.
  */
 export function useCloudSync(library, dispatch) {
   const [user, setUser] = useState(null);
   const [status, setStatus] = useState('idle'); // idle | syncing | synced | error
   const [error, setError] = useState(null);
   const [lastSynced, setLastSynced] = useState(null);
+  const online = useOnlineStatus();
 
   const libraryRef = useRef(library);
   const syncedSig = useRef(null);
@@ -75,7 +78,9 @@ export function useCloudSync(library, dispatch) {
   const uid = user?.uid;
 
   const syncNow = useCallback(async () => {
-    if (!uid) return;
+    // Offline, Firestore would answer reads from its cache and leave writes
+    // pending indefinitely; the `online` listener below syncs on reconnect.
+    if (!uid || !navigator.onLine) return;
     if (inFlight.current) {
       pending.current = true;
       return;
@@ -173,7 +178,18 @@ export function useCloudSync(library, dispatch) {
   }, []);
 
   return useMemo(
-    () => ({ enabled: cloudEnabled, user, status, error, lastSynced, syncNow, signIn, signUp, resetPassword, signOut }),
-    [user, status, error, lastSynced, syncNow, signOut],
+    () => ({
+      enabled: cloudEnabled,
+      user,
+      status: online ? status : 'offline', // idle | syncing | synced | error | offline
+      error,
+      lastSynced,
+      syncNow,
+      signIn,
+      signUp,
+      resetPassword,
+      signOut,
+    }),
+    [user, online, status, error, lastSynced, syncNow, signOut],
   );
 }

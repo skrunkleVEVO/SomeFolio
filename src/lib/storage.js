@@ -9,7 +9,7 @@ const LEGACY_KEYS = ['thingsbook:library:v1']; // read once so pre-rebrand data 
  *   version: 1,
  *   entries: { [id]: Entry | { id, deleted: true, updatedAt } },
  *   vibes: string[],          vibesUpdatedAt: number,
- *   prefs: { accent, surface, density },  prefsUpdatedAt: number,
+ *   prefs: { accent, surface, density, stackFranchises },  prefsUpdatedAt: number,
  * }
  * Deleted entries are kept as tombstones so a removal on one device
  * propagates through cloud sync instead of being resurrected by a merge.
