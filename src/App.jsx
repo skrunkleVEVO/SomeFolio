@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { Dices } from 'lucide-react';
 import Header from './components/Header';
 import CategoryBar from './components/CategoryBar';
@@ -14,12 +14,16 @@ import WelcomeTour from './components/WelcomeTour';
 import SearchPage from './components/SearchPage';
 import { useLibrary } from './context/LibraryContext';
 import { useApplyTheme } from './hooks/useApplyTheme';
+import { useRadarPage } from './hooks/useRadarPage';
 import { useSearchPage } from './hooks/useSearchPage';
 import { useServiceWorker } from './hooks/useServiceWorker';
 import { categoryCounts, filterEntries, genresIn, matchesCategory, matchesTab, tabCounts } from './lib/filters';
 import { stackEntries } from './lib/franchises';
 import { hasSeenTour, markTourSeen } from './lib/onboarding';
 import { focusSearch } from './lib/search';
+
+// Loaded on first open, so Framer Motion stays out of the library's bundle.
+const ReleaseRadar = lazy(() => import('./components/ReleaseRadar'));
 
 export default function App() {
   const { entries, franchises, vibes, prefs, setPrefs } = useLibrary();
@@ -37,6 +41,7 @@ export default function App() {
   const [hubId, setHubId] = useState(null); // open franchise hub
   const [returnToHub, setReturnToHub] = useState(null); // hub to reopen when the detail sheet closes
   const { search, openSearch, closeSearch } = useSearchPage(); // full results page, replaces the library view
+  const { radarOpen, openRadar, closeRadar } = useRadarPage(); // release calendar + news, replaces the library view
 
   const inCategory = useMemo(() => entries.filter((e) => matchesCategory(e, category)), [entries, category]);
   const categoryTotals = useMemo(() => categoryCounts(entries), [entries]);
@@ -75,6 +80,8 @@ export default function App() {
         onAdd={() => openAdd()}
         onAddManual={(scope, title) => openAdd({ category: scope, title })}
         onRandomize={() => setPanel('random')}
+        onRadar={radarOpen ? closeRadar : openRadar}
+        radarOpen={radarOpen && !search}
         onSettings={() => setPanel('settings')}
       />
 
@@ -88,6 +95,10 @@ export default function App() {
             onOpen={setDetail}
             onAddManual={(scope, title) => openAdd({ category: scope, title })}
           />
+        ) : radarOpen ? (
+          <Suspense fallback={null}>
+            <ReleaseRadar onBack={closeRadar} onOpen={setDetail} />
+          </Suspense>
         ) : (
           <>
             {entries.length > 0 && (

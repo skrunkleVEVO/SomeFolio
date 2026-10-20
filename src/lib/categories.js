@@ -11,12 +11,21 @@
 //   search    copy for the search box: { plural, starters } — the database
 //             itself is picked in lib/search.js; categories without one omit it
 //
-// Field types: text | number | select | tags. `list` gives suggestions (datalist);
+// Every category ends with the two "Next release" fields the Release Radar
+// reads (lib/radar.js), for titles whose database has no release schedule.
+//
+// Field types: text | number | select | tags | date (YYYY-MM-DD). `list` gives suggestions (datalist);
 // `unit` formats a number in summaries ("12 episodes").
 
 import { BookOpen, Clapperboard, Gamepad2, Library, Shapes, Tv } from 'lucide-react';
 
 const year = { key: 'year', label: 'Year', type: 'number', min: 1800, max: 2200, placeholder: '2024' };
+
+const RELEASE_KEYS = ['releaseDate', 'releaseNote'];
+const nextRelease = (placeholder) => [
+  { key: 'releaseDate', label: 'Next release', type: 'date' },
+  { key: 'releaseNote', label: 'What’s releasing', type: 'text', placeholder },
+];
 
 export const CATEGORIES = [
   {
@@ -33,6 +42,7 @@ export const CATEGORIES = [
       { key: 'studio', label: 'Studio', type: 'text', placeholder: 'MAPPA' },
       { key: 'format', label: 'Format', type: 'select', options: ['TV', 'Movie', 'OVA', 'ONA', 'Special', 'TV Short'] },
       year,
+      ...nextRelease('Season 2 premiere'),
     ],
   },
   {
@@ -49,6 +59,7 @@ export const CATEGORIES = [
       { key: 'volumes', label: 'Volumes', type: 'number', unit: 'volume', min: 0, placeholder: '14' },
       { key: 'author', label: 'Author', type: 'text', placeholder: 'Hirohiko Araki' },
       year,
+      ...nextRelease('Volume 12'),
     ],
   },
   {
@@ -71,6 +82,7 @@ export const CATEGORIES = [
       { key: 'hoursPlayed', label: 'Hours played', type: 'number', min: 0, placeholder: '0' },
       { key: 'developer', label: 'Developer', type: 'text', placeholder: 'FromSoftware' },
       year,
+      ...nextRelease('Early access'),
     ],
   },
   {
@@ -87,6 +99,7 @@ export const CATEGORIES = [
       { key: 'episodes', label: 'Episodes', type: 'number', unit: 'episode', min: 0, placeholder: '10' },
       { key: 'director', label: 'Director / creator', type: 'text', placeholder: 'Denis Villeneuve' },
       year,
+      ...nextRelease('Season 3 premiere'),
     ],
   },
   {
@@ -102,6 +115,7 @@ export const CATEGORIES = [
       { key: 'author', label: 'Author', type: 'text', placeholder: 'Ursula K. Le Guin' },
       { key: 'chapters', label: 'Chapters', type: 'number', unit: 'chapter', min: 0, placeholder: '24' },
       year,
+      ...nextRelease('Paperback'),
     ],
   },
   {
@@ -115,6 +129,7 @@ export const CATEGORIES = [
     fields: [
       { key: 'customTags', label: 'Tags', type: 'tags', placeholder: 'Board game, Vinyl, Podcast…' },
       { key: 'link', label: 'Link', type: 'text', placeholder: 'https://…' },
+      ...nextRelease('Launch'),
     ],
   },
 ];
@@ -163,7 +178,7 @@ export function unitCount(n, unit) {
 export function detailLine(entry) {
   const category = getCategory(entry.category);
   return category.fields
-    .filter((f) => f.type !== 'tags' && f.key !== 'link' && f.key !== category.progress?.key)
+    .filter((f) => f.type !== 'tags' && f.key !== 'link' && f.key !== category.progress?.key && !RELEASE_KEYS.includes(f.key))
     .map((f) => {
       const value = entry.metadata[f.key];
       if (value == null || value === '') return null;

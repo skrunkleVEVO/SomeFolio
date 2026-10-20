@@ -2,7 +2,7 @@
 // fallback when AniList is down or rate-limiting. Both are normalised to the
 // same shape (see lib/search.js).
 
-const ANILIST_URL = 'https://graphql.anilist.co';
+export const ANILIST_URL = 'https://graphql.anilist.co';
 const JIKAN_URL = 'https://api.jikan.moe/v4';
 
 const SEARCH_QUERY = /* GraphQL */ `

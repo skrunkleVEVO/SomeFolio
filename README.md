@@ -9,6 +9,7 @@ A mobile-first, dark-mode tracker for anime, manga, games, movies/TV, books and 
 - **Franchise stacking**: split series such as JoJo's Bizarre Adventure or Fate collapse into one hub card with stacked posters. The hub lists every part in release order with quick +1, rename and ungroup. Grouping is detected from titles, and each title's detail sheet can set a franchise name or keep that title separate. Turn stacking on or off with **Stack franchises** next to the sort menu.
 - **Library**: a poster grid with category tabs (All, Anime, Manga, Games, Movies/TV, Books, Custom), status filters (In Progress / Completed / Backlog / Planned / On Hold / Favorites, labelled per category, e.g. "Reading" or "Plan to Play"), sort options, and vibe + genre pill filters (Any/All matching).
 - **Detail sheet**: a bottom-sheet drawer on phones (drag to dismiss) and a side drawer on desktop, with +1 episode/chapter/hour, a status dropdown, favorite, half-star 1–10 rating, a details editor, custom vibe tags and auto-saving notes.
+- **Release Radar** (radar button in the header, or `#radar`): a calendar of upcoming episodes, premieres and launches for the titles you track, with a live countdown to the next one, and a news feed of sequel and adaptation announcements, trailers and newly aired episodes. Data comes from AniList (anime and manga, including MyAnimeList entries) and TVmaze, plus TMDB and RAWG when their keys are set. For anything else, set **Next release** in a title's details. Results are cached on the device so the radar works offline.
 - **Spin**: "What's next?" picks at random from your Planned and Backlog titles in the current category, filtered by vibes/genres.
 - **Themes**: 8 accent palettes, 4 dark backgrounds (Midnight, AMOLED, Navy, Plum) and 3 card sizes, set under Settings → Appearance.
 - **Data**: LocalStorage by default, JSON export/import (merge or replace), and optional Firestore sync with per-title last-write-wins merging.
@@ -86,6 +87,7 @@ src/
 │   ├── AddEntryModal.jsx       # Manual "Add entry" form
 │   ├── MetadataFields.jsx      # Category-specific inputs for the form and details editor
 │   ├── WelcomeTour.jsx         # First-visit walkthrough
+│   ├── ReleaseRadar.jsx        # Release calendar, next-up countdown, news feed
 │   ├── Randomizer.jsx          # "What's next?" spinner
 │   ├── SettingsSheet.jsx       # Appearance, cloud sync, backup, vibe editor
 │   └── ui/                     # Sheet (bottom sheet / modal), Pill, StarRating, CoverArt
@@ -93,6 +95,8 @@ src/
 ├── hooks/
 │   ├── useMediaSearch.js       # Debounce + abort, per category
 │   ├── useSearchPage.js        # Results page state, kept in the URL hash
+│   ├── useRadarPage.js         # Release Radar open state (#radar)
+│   ├── useReleaseRadar.js      # Radar cache, stale-only refresh, view model
 │   ├── useEntryActions.js      # Add / remove with an Undo toast
 │   ├── useCloudSync.js         # Pull → merge → push loop (pauses while offline)
 │   ├── useServiceWorker.js     # Registers the service worker, offline-ready + update toasts
@@ -103,6 +107,7 @@ src/
 └── lib/
     ├── categories.js           # Category registry: labels, fields, progress counters
     ├── search.js               # Per-category search sources (books, movies/TV, games), normalisation
+    ├── radar.js                # Release/news fetchers per source, LocalStorage cache
     ├── anilist.js              # AniList + Jikan clients for anime and manga
     ├── onboarding.js           # "Tour seen" flag (this device only)
     ├── storage.js              # LocalStorage, validation, merge

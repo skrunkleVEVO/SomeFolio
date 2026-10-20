@@ -64,6 +64,8 @@ function FieldInput({ id, field, value, onChange }) {
         </div>
       );
     }
+    case 'date':
+      return <input id={id} type="date" value={value ?? ''} onChange={(e) => onChange(e.target.value || null)} className={cn(inputClass, 'tabular-nums')} />;
     case 'tags':
       return <TagInput id={id} value={value || []} onChange={onChange} placeholder={field.placeholder} />;
     default:

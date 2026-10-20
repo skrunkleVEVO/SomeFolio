@@ -32,7 +32,11 @@ export function useSearchPage() {
   const openSearch = useCallback((next) => {
     // A new query or tab replaces the current results, so Back always leads to the library.
     if (parse()) window.history.replaceState(window.history.state, '', hashFor(next));
-    else window.history.pushState(PUSHED, '', hashFor(next));
+    else {
+      window.history.pushState(PUSHED, '', hashFor(next));
+      // pushState fires no event: let the radar page see that the URL changed.
+      window.dispatchEvent(new PopStateEvent('popstate', { state: PUSHED }));
+    }
     setSearch(next);
   }, []);
 

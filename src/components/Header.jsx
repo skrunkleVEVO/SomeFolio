@@ -1,8 +1,9 @@
-import { BookMarked, Dices, Plus, Settings, WifiOff } from 'lucide-react';
+import { BookMarked, Dices, Plus, Radar, Settings, WifiOff } from 'lucide-react';
 import SearchBar from './SearchBar';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { cn } from '../lib/cn';
 
-export default function Header({ category, search, onSelectMedia, onSearch, onFilterTag, onAdd, onAddManual, onRandomize, onSettings }) {
+export default function Header({ category, search, onSelectMedia, onSearch, onFilterTag, onAdd, onAddManual, onRandomize, onRadar, radarOpen, onSettings }) {
   const online = useOnlineStatus();
   return (
     <header className="sticky top-0 z-30 border-b border-white/5 bg-zinc-950/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
@@ -41,6 +42,19 @@ export default function Header({ category, search, onSelectMedia, onSearch, onFi
             className="hidden items-center gap-2 rounded-xl bg-linear-to-r from-accent-500 to-accent2-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-accent-500/25 transition hover:brightness-110 active:scale-95 md:inline-flex"
           >
             <Dices size={18} /> What's next?
+          </button>
+          <button
+            type="button"
+            onClick={onRadar}
+            aria-label="Release Radar"
+            aria-pressed={radarOpen}
+            title="Upcoming releases and news for your titles"
+            className={cn(
+              'grid size-10 place-items-center rounded-xl border transition',
+              radarOpen ? 'border-white bg-white text-zinc-950' : 'border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10 hover:text-white',
+            )}
+          >
+            <Radar size={19} />
           </button>
           <button
             type="button"
