@@ -1,34 +1,29 @@
-import { getCategory, progressOf, progressText } from '../lib/categories';
+import { Star } from 'lucide-react';
+import { getCategory, progressOf, progressText, statusLabel } from '../lib/categories';
+import { STATUS_BY_ID } from '../lib/constants';
 import { cn } from '../lib/cn';
 
-const chip = 'truncate rounded-md bg-white/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-100 backdrop-blur';
-
 /**
- * The category-aware fact on a card's bottom line: episode count for anime and
- * TV, chapter progress for manga and books, platform for games, the first tag
- * for custom entries. Falls back to the category name so the line never jumps.
+ * A card's bottom line, one status dot and one line of text: progress while a
+ * title is active, otherwise its status, plus the platform or first tag where
+ * the category has one. Compact cards show the text only for active titles.
  */
 export default function EntryBadge({ entry, compact = false }) {
   const category = getCategory(entry.category);
+  const status = STATUS_BY_ID[entry.status];
+  const label = statusLabel(status, entry.category);
   const p = progressOf(entry);
-  const text = p && progressText(p);
-  const m = entry.metadata;
+  const progress = (entry.status === 'watching' || entry.status === 'hold') && p ? progressText(p) : '';
+  const extra = compact ? '' : category.badge === 'platform' ? entry.metadata.platform : category.badge === 'tags' ? entry.metadata.customTags?.[0] : '';
+  const text = [progress || (compact ? '' : label), extra].filter(Boolean).join(' · ');
 
-  switch (category.badge) {
-    case 'platform':
-      return (
-        <span className="flex min-w-0 items-center gap-1.5">
-          {m.platform ? <span className={chip}>{m.platform}</span> : <span className="truncate">{category.label}</span>}
-          {!compact && text && <span className="shrink-0 tabular-nums">{text}</span>}
-        </span>
-      );
-    case 'tags': {
-      const tag = m.customTags?.[0];
-      return tag ? <span className={chip}>{tag}</span> : <span className="truncate">{category.label}</span>;
-    }
-    default:
-      return <span className="truncate tabular-nums">{text || m.format || category.label}</span>;
-  }
+  return (
+    <span className="flex min-w-0 items-center gap-1.5" title={label}>
+      <span className={`size-1.5 shrink-0 rounded-full ${status?.dot}`} aria-hidden="true" />
+      {!text.startsWith(label) && <span className="sr-only">{label}</span>}
+      {text && <span className="truncate tabular-nums">{text}</span>}
+    </span>
+  );
 }
 
 /** Thin progress bar for cards and rows, shown only when it says something. */
@@ -41,6 +36,28 @@ export function ProgressBar({ entry, className }) {
   return (
     <span className={cn('block h-1 overflow-hidden rounded-full bg-white/15', className)}>
       <span className="block h-full rounded-full bg-linear-to-r from-accent-500 to-accent2-400" style={{ width: `${p.pct}%` }} />
+    </span>
+  );
+}
+
+/** Keeps the title legible over the bottom of a cover and leaves the top of the art untouched. */
+export function CoverScrim() {
+  return <div className="absolute inset-x-0 bottom-0 h-3/5 bg-linear-to-t from-black via-black/70 to-transparent" />;
+}
+
+/** The one chip allowed over a cover's art, top left. */
+export function CoverChip({ children }) {
+  return (
+    <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-black/60 px-1.5 py-1 text-[11px] font-bold leading-none tabular-nums text-zinc-100 backdrop-blur">
+      {children}
+    </span>
+  );
+}
+
+export function RatingText({ value }) {
+  return (
+    <span className="flex shrink-0 items-center gap-0.5 tabular-nums text-amber-300">
+      <Star size={11} className="fill-amber-300" aria-hidden="true" /> {value}
     </span>
   );
 }

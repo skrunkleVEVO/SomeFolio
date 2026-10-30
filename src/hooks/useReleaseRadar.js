@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useOnlineStatus } from './useOnlineStatus';
+import { isFeedStale, refreshFeed } from '../lib/news';
 import { buildRadar, loadRadar, refreshRadar, saveRadar } from '../lib/radar';
 
 /**
- * Release Radar state for `entries`: `{ releases, news, lastVisit, updatedAt,
+ * Release Radar state for `entries`: `{ releases, news, allNews, lastVisit, updatedAt,
  * loading, failed, refresh }`. Opening it refreshes whatever is stale (while
- * online); `refresh()` refetches everything. `lastVisit` is the previous time
- * the radar was opened, for "New" markers.
+ * online); `refresh()` refetches everything. Dates and articles land separately,
+ * so a slow news site never holds up the schedule. `lastVisit` is the previous
+ * time the radar was opened, for "New" markers.
  */
 export function useReleaseRadar(entries) {
   const [cache, setCache] = useState(loadRadar);
@@ -36,10 +38,18 @@ export function useReleaseRadar(entries) {
     const controller = new AbortController();
     runRef.current = controller;
     setLoading(true);
+    const feed = force || isFeedStale(cacheRef.current.feed) ? refreshFeed(cacheRef.current.feed, { signal: controller.signal }) : null;
     try {
-      const result = await refreshRadar(entriesRef.current, cacheRef.current, { force, signal: controller.signal });
-      setCache((c) => ({ ...result.cache, lastVisit: c.lastVisit }));
-      setFailed(result.failed);
+      const titles = refreshRadar(entriesRef.current, cacheRef.current, { force, signal: controller.signal }).then((result) => {
+        setCache((c) => ({ ...result.cache, feed: c.feed, lastVisit: c.lastVisit }));
+        return result.failed;
+      });
+      const articles = feed?.then((result) => {
+        setCache((c) => ({ ...c, feed: result.feed }));
+        return result.failed ? 1 : 0;
+      });
+      const [titlesFailed, articlesFailed = 0] = await Promise.all([titles, articles]);
+      setFailed(titlesFailed + articlesFailed);
     } catch (err) {
       if (err.name !== 'AbortError') setFailed((n) => n + 1);
     } finally {
@@ -59,7 +69,7 @@ export function useReleaseRadar(entries) {
   useEffect(() => () => runRef.current?.abort(), []);
 
   const view = useMemo(() => buildRadar(entries, cache), [entries, cache]);
-  const updatedAt = useMemo(() => Math.max(0, ...Object.values(cache.items).map((i) => i.fetchedAt || 0)), [cache.items]);
+  const updatedAt = useMemo(() => Math.max(cache.feed?.fetchedAt || 0, ...Object.values(cache.items).map((i) => i.fetchedAt || 0)), [cache.items, cache.feed]);
 
   return { ...view, lastVisit, updatedAt, loading, failed, refresh };
 }

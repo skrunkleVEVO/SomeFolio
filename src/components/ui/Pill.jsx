@@ -2,7 +2,7 @@ import { cn } from '../../lib/cn';
 
 const TONES = {
   vibe: {
-    on: 'border-transparent bg-linear-to-r from-accent-500 to-accent2-500 text-white shadow-lg shadow-accent-500/25',
+    on: 'border-transparent bg-linear-to-r from-accent-500 to-accent2-500 text-white',
     off: 'border-accent-400/25 bg-accent-400/5 text-accent-200 hover:bg-accent-400/15',
   },
   genre: {
@@ -18,7 +18,7 @@ export default function Pill({ active = false, tone = 'genre', className, childr
       type="button"
       aria-pressed={active}
       className={cn(
-        'shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium transition active:scale-95',
+        'hit-area shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium transition active:scale-[0.97]',
         active ? styles.on : styles.off,
         className,
       )}

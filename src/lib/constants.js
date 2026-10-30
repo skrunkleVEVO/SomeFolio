@@ -54,8 +54,8 @@ export const DEFAULT_PREFS = { accent: 'neon', surface: 'midnight', density: 'co
 export const THEME_CACHE_KEY = 'somefolio:theme'; // read by the pre-paint script in index.html
 
 export const SORTS = [
-  { id: 'updated', label: 'Recently updated' },
-  { id: 'added', label: 'Recently added' },
-  { id: 'title', label: 'Title A–Z' },
-  { id: 'rating', label: 'My rating' },
+  { id: 'updated', label: 'Recently updated', short: 'Updated' },
+  { id: 'added', label: 'Recently added', short: 'Added' },
+  { id: 'title', label: 'Title A–Z', short: 'A–Z' },
+  { id: 'rating', label: 'My rating', short: 'Rating' },
 ];

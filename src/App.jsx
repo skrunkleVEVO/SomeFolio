@@ -141,7 +141,7 @@ export default function App() {
         type="button"
         onClick={() => setPanel('random')}
         aria-label="What's next?"
-        className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-5 z-20 grid size-14 place-items-center rounded-2xl bg-linear-to-br from-accent-500 to-accent2-600 text-white shadow-xl shadow-accent-500/40 transition active:scale-90 md:hidden"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-5 z-20 grid size-14 place-items-center rounded-2xl bg-linear-to-br from-accent-500 to-accent2-600 text-white shadow-lg shadow-black/50 transition active:scale-[0.94] md:hidden"
       >
         <Dices size={26} />
       </button>

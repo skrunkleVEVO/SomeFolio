@@ -6,10 +6,10 @@ A mobile-first, dark-mode tracker for anime, manga, games, movies/TV, books and 
 - **Full results page**: press Enter or the search button to open a page with every match: titles already in your library, then results from every database at once (*Everything*) or one category's database as a grid. The query lives in the URL (`#search?q=…`), so the browser's Back button returns to your library. Each result can be previewed, or added to Planned with one tap.
 - **Undo and remove**: every add shows an **Undo** toast, and each title's detail sheet has a remove button next to Close (tap twice; removing also offers Undo).
 - **First-visit tour** that walks through searching, tracking and the dice, plus step-by-step empty states. Replay it from Settings → *How SomeFolio works*. Focusing the empty search box shows your recent searches (arrow keys, Enter, Delete to remove one, Clear history) and your library's most-used vibes and genres as one-tap filters.
-- **Franchise stacking**: split series such as JoJo's Bizarre Adventure or Fate collapse into one hub card with stacked posters. The hub lists every part in release order with quick +1, rename and ungroup. Grouping is detected from titles, and each title's detail sheet can set a franchise name or keep that title separate. Turn stacking on or off with **Stack franchises** next to the sort menu.
+- **Franchise stacking**: split series such as JoJo's Bizarre Adventure or Fate collapse into one hub card with stacked posters. The hub lists every part in release order with quick +1, rename and ungroup. Grouping is detected from titles, and each title's detail sheet can set a franchise name or keep that title separate. Turn stacking on or off with the **Stack franchises** button next to the sort menu.
 - **Library**: a poster grid with category tabs (All, Anime, Manga, Games, Movies/TV, Books, Custom), status filters (In Progress / Completed / Backlog / Planned / On Hold / Favorites, labelled per category, e.g. "Reading" or "Plan to Play"), sort options, and vibe + genre pill filters (Any/All matching).
 - **Detail sheet**: a bottom-sheet drawer on phones (drag to dismiss) and a side drawer on desktop, with +1 episode/chapter/hour, a status dropdown, favorite, half-star 1–10 rating, a details editor, custom vibe tags and auto-saving notes.
-- **Release Radar** (radar button in the header, or `#radar`): a calendar of upcoming episodes, premieres and launches for the titles you track, with a live countdown to the next one, and a news feed of sequel and adaptation announcements, trailers and newly aired episodes. Data comes from AniList (anime and manga, including MyAnimeList entries) and TVmaze, plus TMDB and RAWG when their keys are set. For anything else, set **Next release** in a title's details. Results are cached on the device so the radar works offline.
+- **Release Radar** (radar button in the header, or `#radar`): a dated **Schedule** of upcoming episodes, premieres and launches for the titles you track, with a live countdown to the next one, and a **Feed** of releases, new seasons, betas and demos, leaks and rumors (marked as unconfirmed), trailers and announcements, for your titles or for everything. Filter it by kind or medium. Tap a row for its synopsis, episode still, runtime, network and your own progress. Data comes from AniList (anime and manga, including MyAnimeList entries), TVmaze, Wikidata (release dates for games, films and books found through Wikipedia) and Google Books, plus TMDB and RAWG when their keys are set. Articles come from the public APIs of Gematsu, Insider Gaming, Siliconera, Anime Hunch, ComicBook and Literary Hub, and are matched to your titles on the device, so your library is never sent to them. For anything else, set **Next release** in a title's details. Results are cached on the device so the radar works offline.
 - **Spin**: "What's next?" picks at random from your Planned and Backlog titles in the current category, filtered by vibes/genres.
 - **Themes**: 8 accent palettes, 4 dark backgrounds (Midnight, AMOLED, Navy, Plum) and 3 card sizes, set under Settings → Appearance.
 - **Data**: LocalStorage by default, JSON export/import (merge or replace), and optional Firestore sync with per-title last-write-wins merging.
@@ -77,17 +77,17 @@ src/
 │   ├── SearchPage.jsx          # Full results page: library matches + every database
 │   ├── CategoryBar.jsx         # Category tabs with counts
 │   ├── StatusFilter.jsx        # Status tabs with counts
-│   ├── FilterBar.jsx           # Vibe/genre pills, Any/All, sort
+│   ├── FilterBar.jsx           # Collapsible vibes & genres, Any/All, sort
 │   ├── MediaGrid.jsx           # Responsive poster grid (3 densities) + empty states
 │   ├── MediaCard.jsx           # Poster card with quick +1
-│   ├── EntryBadge.jsx          # Per-category card badge + progress bar
+│   ├── EntryBadge.jsx          # Card status line, cover chip, scrim, rating, progress bar
 │   ├── FranchiseCard.jsx       # Stacked hub card for a franchise
 │   ├── FranchiseHub.jsx        # Franchise drawer: parts in release order, rename, ungroup
 │   ├── DetailSheet.jsx         # Add / track / rate / tag / annotate / remove
 │   ├── AddEntryModal.jsx       # Manual "Add entry" form
 │   ├── MetadataFields.jsx      # Category-specific inputs for the form and details editor
 │   ├── WelcomeTour.jsx         # First-visit walkthrough
-│   ├── ReleaseRadar.jsx        # Release calendar, next-up countdown, news feed
+│   ├── ReleaseRadar.jsx        # Schedule, next-up countdown, feed, expandable details
 │   ├── Randomizer.jsx          # "What's next?" spinner
 │   ├── SettingsSheet.jsx       # Appearance, cloud sync, backup, vibe editor
 │   └── ui/                     # Sheet (bottom sheet / modal), Pill, StarRating, CoverArt

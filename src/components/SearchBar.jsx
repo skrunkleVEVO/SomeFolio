@@ -194,7 +194,7 @@ export default function SearchBar({ category, submitted, onSelect, onSubmit, onF
             }}
             onFocus={() => setOpen(true)}
             onKeyDown={onKeyDown}
-            placeholder={`Search ${scopeInfo.search.plural} to add…`}
+            placeholder="Search…"
             aria-label={`Search ${scopeInfo.search.plural}`}
             role="combobox"
             aria-expanded={open}
@@ -204,7 +204,7 @@ export default function SearchBar({ category, submitted, onSelect, onSubmit, onF
             aria-describedby={`${baseId}-hint`}
             autoComplete="off"
             enterKeyHint="search"
-            className="w-full bg-transparent py-2.5 pl-3 pr-10 text-base text-zinc-100 placeholder:text-zinc-500 outline-none md:text-sm [&::-webkit-search-cancel-button]:hidden"
+            className="w-full bg-transparent py-2.5 pl-3 pr-10 text-base text-zinc-100 placeholder:text-zinc-400 outline-none md:text-sm [&::-webkit-search-cancel-button]:hidden"
           />
           <span id={`${baseId}-hint`} className="sr-only">
             Press Enter to see all results. Use the arrow keys to pick a suggestion, and Delete to remove a recent search.

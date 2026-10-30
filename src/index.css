@@ -88,6 +88,29 @@ html[data-surface="plum"] { --color-zinc-950: #0d0710; --color-zinc-900: #1a1020
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+  ::selection {
+    background: color-mix(in oklab, var(--color-accent-500) 45%, transparent);
+    color: #fff;
+  }
+  :root {
+    accent-color: var(--color-accent-500);
+    caret-color: var(--color-accent-300);
+    scrollbar-color: var(--color-zinc-800) transparent;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent-400);
+    outline-offset: 2px;
+  }
+}
+
+/* A small control keeps its look and gets a thumb-sized tap target. */
+@utility hit-area {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -8px 0;
+  }
 }
 
 @utility no-scrollbar {

@@ -1,14 +1,12 @@
-import { Heart, Plus, Star } from 'lucide-react';
+import { Heart, Plus } from 'lucide-react';
 import CoverArt from './ui/CoverArt';
-import EntryBadge, { ProgressBar } from './EntryBadge';
+import EntryBadge, { CoverChip, CoverScrim, ProgressBar, RatingText } from './EntryBadge';
 import { useQuickProgress } from '../hooks/useQuickProgress';
-import { getCategory, statusLabel } from '../lib/categories';
-import { STATUS_BY_ID } from '../lib/constants';
+import { getCategory } from '../lib/categories';
 
-/** `showCategory` adds the category icon to the status badge (used in the All view). */
+/** `showCategory` adds the category icon over the cover (used in the All view). */
 export default function MediaCard({ entry, onOpen, compact = false, showCategory = false }) {
   const addOne = useQuickProgress();
-  const status = STATUS_BY_ID[entry.status];
   const category = getCategory(entry.category);
   const CategoryIcon = category.icon;
   const canStep = entry.status === 'watching' && category.progress;
@@ -23,34 +21,24 @@ export default function MediaCard({ entry, onOpen, compact = false, showCategory
       <button
         type="button"
         onClick={() => onOpen(entry)}
-        className="block w-full overflow-hidden rounded-2xl bg-zinc-900 text-left ring-1 ring-white/10 transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/60 hover:ring-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 active:scale-[0.98]"
+        className="block w-full overflow-hidden rounded-2xl bg-zinc-900 text-left ring-1 ring-white/10 transition duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/60 hover:ring-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 active:scale-[0.98]"
       >
         <div className="relative aspect-[2/3]">
-          <CoverArt entry={entry} iconSize={compact ? 24 : 36} className="h-full w-full transition duration-500 group-hover:scale-105" />
-          <div className="absolute inset-0 bg-linear-to-t from-black via-black/30 to-transparent opacity-90" />
+          <CoverArt entry={entry} iconSize={compact ? 24 : 36} className="h-full w-full transition duration-300 group-hover:scale-105" />
+          <CoverScrim />
 
-          <div className="absolute left-2 top-2 flex items-center gap-1.5">
-            <span className="flex items-center gap-1.5 rounded-full bg-black/60 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-200 backdrop-blur">
-              {showCategory && <CategoryIcon size={11} aria-label={category.label} />}
-              <span className={`size-1.5 rounded-full ${status?.dot}`} />
-              {!compact && statusLabel(status, entry.category)}
-            </span>
-            {entry.favorite && (
-              <span className="grid size-6 place-items-center rounded-full bg-black/60 backdrop-blur">
-                <Heart size={12} className="fill-rose-500 text-rose-500" />
-              </span>
-            )}
-          </div>
+          {(showCategory || entry.favorite) && (
+            <CoverChip>
+              {showCategory && <CategoryIcon size={12} aria-label={category.label} />}
+              {entry.favorite && <Heart size={12} className="fill-rose-500 text-rose-500" aria-label="Favorite" />}
+            </CoverChip>
+          )}
 
           <div className={compact ? 'absolute inset-x-0 bottom-0 space-y-1 p-2' : 'absolute inset-x-0 bottom-0 space-y-1.5 p-3'}>
             <h3 className={`line-clamp-2 font-bold leading-tight text-white drop-shadow ${compact ? 'text-xs' : 'text-sm'}`}>{entry.title}</h3>
             <div className="flex items-center justify-between gap-2 text-[11px] font-medium text-zinc-300">
               <EntryBadge entry={entry} compact={compact} />
-              {entry.rating > 0 && (
-                <span className="flex shrink-0 items-center gap-0.5 text-amber-300">
-                  <Star size={11} className="fill-amber-300" /> {entry.rating}
-                </span>
-              )}
+              {entry.rating > 0 && <RatingText value={entry.rating} />}
             </div>
             <ProgressBar entry={entry} />
           </div>
