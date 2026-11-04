@@ -3,6 +3,7 @@ import CoverArt from './ui/CoverArt';
 import EntryBadge, { CoverChip, CoverScrim, ProgressBar, RatingText } from './EntryBadge';
 import { useQuickProgress } from '../hooks/useQuickProgress';
 import { getCategory } from '../lib/categories';
+import { spotlightMove } from '../lib/spotlight';
 
 /** `showCategory` adds the category icon over the cover (used in the All view). */
 export default function MediaCard({ entry, onOpen, compact = false, showCategory = false }) {
@@ -21,10 +22,11 @@ export default function MediaCard({ entry, onOpen, compact = false, showCategory
       <button
         type="button"
         onClick={() => onOpen(entry)}
-        className="block w-full overflow-hidden rounded-2xl bg-zinc-900 text-left ring-1 ring-white/10 transition duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/60 hover:ring-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 active:scale-[0.98]"
+        onPointerMove={spotlightMove}
+        className="card-lift spotlight relative block w-full overflow-hidden rounded-2xl bg-zinc-900 text-left ring-1 ring-white/10 hover:ring-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400"
       >
         <div className="relative aspect-[2/3]">
-          <CoverArt entry={entry} iconSize={compact ? 24 : 36} className="h-full w-full transition duration-300 group-hover:scale-105" />
+          <CoverArt entry={entry} iconSize={compact ? 24 : 36} className="card-zoom h-full w-full" />
           <CoverScrim />
 
           {(showCategory || entry.favorite) && (
@@ -50,7 +52,7 @@ export default function MediaCard({ entry, onOpen, compact = false, showCategory
           type="button"
           onClick={plusOne}
           aria-label={`Add one ${category.progress.unit} to ${entry.title}`}
-          className="absolute right-2 top-2 flex h-8 items-center gap-0.5 rounded-full bg-white/90 px-2.5 text-xs font-bold text-zinc-950 shadow-lg transition hover:bg-white active:scale-90 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+          className="absolute right-2 top-2 flex h-8 items-center gap-0.5 rounded-full bg-white/90 px-2.5 text-xs font-bold text-zinc-950 shadow-lg tactile z-10 hover:bg-white md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
         >
           <Plus size={14} strokeWidth={3} />
           {category.progress.short === 'h' ? '1h' : '1'}

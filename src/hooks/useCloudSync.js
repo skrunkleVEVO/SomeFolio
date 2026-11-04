@@ -9,6 +9,7 @@ import {
   pushMeta,
   resetPassword,
   signIn,
+  signInWithGoogle,
   signOut as cloudSignOut,
   signUp,
 } from '../lib/cloud';
@@ -186,6 +187,7 @@ export function useCloudSync(library, dispatch) {
       lastSynced,
       syncNow,
       signIn,
+      signInWithGoogle,
       signUp,
       resetPassword,
       signOut,

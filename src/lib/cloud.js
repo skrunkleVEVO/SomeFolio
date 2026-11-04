@@ -17,7 +17,7 @@ const CURSOR_MARGIN_MS = 5000; // re-read a few seconds of overlap; merging is i
 const fsModule = () => import('firebase/firestore');
 const authModule = () => import('firebase/auth');
 
-/* ---------- auth (email + password) ---------- */
+/* ---------- auth (email + password, Google) ---------- */
 
 /** Subscribe to sign-in changes. Resolves with an unsubscribe function. */
 export async function onAuthChange(callback) {
@@ -33,6 +33,32 @@ export async function signIn(email, password) {
 export async function signUp(email, password) {
   const [{ auth }, { createUserWithEmailAndPassword }] = await Promise.all([getFirebase(), authModule()]);
   await createUserWithEmailAndPassword(auth, email, password);
+}
+
+/**
+ * Google sign-in. Creates the account on first use, so it covers sign up too.
+ * Uses a popup, falling back to a full-page redirect where popups are blocked or
+ * unsupported (some installed-PWA and in-app browsers); onAuthChange picks up the
+ * redirect result when the app reloads.
+ */
+export async function signInWithGoogle() {
+  const [{ auth }, { GoogleAuthProvider, signInWithPopup, signInWithRedirect }] = await Promise.all([getFirebase(), authModule()]);
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (err) {
+    if (err?.code === 'auth/popup-blocked' || err?.code === 'auth/operation-not-supported-in-this-environment') {
+      await signInWithRedirect(auth, provider);
+      return;
+    }
+    throw err;
+  }
+}
+
+/** True for errors that mean the person simply closed the Google popup. */
+export function isAuthCancel(err) {
+  return err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request';
 }
 
 export async function resetPassword(email) {
@@ -62,7 +88,11 @@ export function authErrorMessage(err) {
     case 'auth/network-request-failed':
       return 'No connection. Check your internet and try again.';
     case 'auth/operation-not-allowed':
-      return 'Enable Email/Password sign-in in the Firebase console.';
+      return 'This sign-in method is off. Enable it under Authentication → Sign-in method in the Firebase console.';
+    case 'auth/account-exists-with-different-credential':
+      return 'That email already has an account with a different sign-in method. Sign in that way instead.';
+    case 'auth/unauthorized-domain':
+      return 'This site isn’t an authorized domain. Add it under Authentication → Settings in the Firebase console.';
     case 'permission-denied':
       return 'Firestore rules blocked sync. Publish firebase/firestore.rules.';
     default:

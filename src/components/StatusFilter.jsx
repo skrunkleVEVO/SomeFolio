@@ -20,7 +20,7 @@ export default function StatusFilter({ value, onChange, counts, category }) {
             aria-pressed={active}
             onClick={() => onChange(tab.id)}
             className={cn(
-              'hit-area flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition active:scale-[0.97]',
+              'hit-area tactile flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold',
               active ? 'bg-white/12 text-white ring-1 ring-white/15' : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200',
             )}
           >

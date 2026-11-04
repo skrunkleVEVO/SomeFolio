@@ -169,17 +169,24 @@ export default function SearchBar({ category, submitted, onSelect, onSubmit, onF
         <label className="relative flex shrink-0 items-center gap-1.5 border-r border-white/10 pl-3 text-accent-200" title="Choose what to search">
           <ScopeIcon size={16} aria-hidden="true" />
           <span className="sr-only">Search in</span>
-          <select
-            value={scope}
-            onChange={(e) => changeScope(e.target.value)}
-            className="h-full cursor-pointer appearance-none bg-transparent py-2.5 pr-7 text-base font-semibold text-zinc-100 outline-none md:text-sm"
-          >
-            {SCOPES.map((c) => (
-              <option key={c.id} value={c.id} className="bg-zinc-900">
-                {c.label}
-              </option>
-            ))}
-          </select>
+          {/* A native select is as wide as its longest option; size it to the chosen label instead
+              by laying it over an invisible copy of that label, which sets the width. */}
+          <span className="relative flex h-full items-center">
+            <span aria-hidden="true" className="invisible whitespace-nowrap pr-6 text-base font-semibold md:text-sm">
+              {SCOPES.find((c) => c.id === scope)?.label}
+            </span>
+            <select
+              value={scope}
+              onChange={(e) => changeScope(e.target.value)}
+              className="absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent pr-6 text-base font-semibold text-zinc-100 outline-none md:text-sm"
+            >
+              {SCOPES.map((c) => (
+                <option key={c.id} value={c.id} className="bg-zinc-900">
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </span>
           <ChevronDown size={14} aria-hidden="true" className="pointer-events-none absolute right-2 text-zinc-400" />
         </label>
         <div className="relative min-w-0 flex-1">

@@ -35,7 +35,7 @@ export default function App() {
   const [matchAll, setMatchAll] = useState(false);
   const [sort, setSort] = useState('updated');
   const [detail, setDetail] = useState(null);
-  const [panel, setPanel] = useState(null); // 'random' | 'settings' | 'add' | null
+  const [panel, setPanel] = useState(null); // 'random' | 'settings' | 'account' | 'add' | null
   const [addDraft, setAddDraft] = useState({}); // { category, title } prefilled in the Add form
   const [tourOpen, setTourOpen] = useState(() => entries.length === 0 && !hasSeenTour()); // first visit only
   const [hubId, setHubId] = useState(null); // open franchise hub
@@ -83,6 +83,7 @@ export default function App() {
         onRadar={radarOpen ? closeRadar : openRadar}
         radarOpen={radarOpen && !search}
         onSettings={() => setPanel('settings')}
+        onAccount={() => setPanel('account')}
       />
 
       <main className="mx-auto max-w-7xl px-4 pb-32 sm:px-6 md:pb-16">
@@ -174,7 +175,8 @@ export default function App() {
         }}
       />
       <SettingsSheet
-        open={panel === 'settings'}
+        open={panel === 'settings' || panel === 'account'}
+        focusAccount={panel === 'account'}
         onClose={() => setPanel(null)}
         onShowTour={() => {
           setPanel(null);

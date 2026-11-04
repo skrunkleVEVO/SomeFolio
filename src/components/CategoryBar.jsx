@@ -17,7 +17,7 @@ export default function CategoryBar({ value, onChange, counts }) {
             aria-pressed={active}
             onClick={() => onChange(id)}
             className={cn(
-              'flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition active:scale-[0.97]',
+              'tactile flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold',
               active ? 'bg-white text-zinc-950' : 'bg-white/5 text-zinc-300 hover:bg-white/10',
             )}
           >

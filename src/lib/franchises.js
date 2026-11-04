@@ -156,3 +156,21 @@ export function franchiseStats(group) {
     avgRating: rated.length ? Math.round((rated.reduce((s, e) => s + e.rating, 0) / rated.length) * 10) / 10 : 0,
   };
 }
+
+/**
+ * Short label for a franchise badge: "3 Seasons" for shows, "Vol. 1–3" for
+ * reading, "3 Games", or "3 Parts" when the group mixes categories.
+ */
+export function partsLabel(group) {
+  const n = group.entries.length;
+  const categories = new Set(group.entries.map((e) => e.category));
+  const only = categories.size === 1 ? [...categories][0] : null;
+  if (only === 'anime') return `${n} Seasons`;
+  if (only === 'screen') {
+    const movies = group.entries.every((e) => e.metadata?.format === 'Movie');
+    return movies ? `${n} Films` : `${n} Seasons`;
+  }
+  if (only === 'manga' || only === 'book') return `Vol. 1–${n}`;
+  if (only === 'game') return `${n} Games`;
+  return `${n} Parts`;
+}

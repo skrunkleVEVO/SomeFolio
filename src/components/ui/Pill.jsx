@@ -18,7 +18,7 @@ export default function Pill({ active = false, tone = 'genre', className, childr
       type="button"
       aria-pressed={active}
       className={cn(
-        'hit-area shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium transition active:scale-[0.97]',
+        'hit-area tactile shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium',
         active ? styles.on : styles.off,
         className,
       )}

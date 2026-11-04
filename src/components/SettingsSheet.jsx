@@ -1,14 +1,15 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, CircleHelp, Cloud, CloudOff, Download, Loader2, LogOut, Palette, RefreshCw, Smartphone, Tags, Trash2, Upload, X } from 'lucide-react';
 import Sheet from './ui/Sheet';
 import { useLibrary } from '../context/LibraryContext';
 import { useToast } from '../context/ToastContext';
 import { timeAgo } from '../lib/filters';
-import { authErrorMessage } from '../lib/cloud';
+import { authErrorMessage, isAuthCancel } from '../lib/cloud';
 import { ACCENTS, DENSITIES, SURFACES } from '../lib/constants';
 import { cn } from '../lib/cn';
 
-export default function SettingsSheet({ open, onClose, onShowTour }) {
+/** `focusAccount` scrolls to the sign-in form on open (used by the navbar's Sign in button). */
+export default function SettingsSheet({ open, onClose, onShowTour, focusAccount = false }) {
   return (
     <Sheet open={open} onClose={onClose} label="Settings">
       {({ close }) => (
@@ -32,7 +33,7 @@ export default function SettingsSheet({ open, onClose, onShowTour }) {
             </button>
           </div>
           <AppearanceSection />
-          <CloudSection />
+          <CloudSection focus={focusAccount} />
           <BackupSection />
           <VibeSection />
           <InstallSection />
@@ -43,9 +44,9 @@ export default function SettingsSheet({ open, onClose, onShowTour }) {
   );
 }
 
-function Section({ icon: Icon, title, children }) {
+function Section({ icon: Icon, title, children, sectionRef }) {
   return (
-    <section>
+    <section ref={sectionRef} className="scroll-mt-6">
       <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
         <Icon size={14} /> {title}
       </h3>
@@ -143,17 +144,40 @@ function AppearanceSection() {
   );
 }
 
-function CloudSection() {
+function GoogleMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-4.5 shrink-0" aria-hidden="true">
+      <path fill="#4285F4" d="M23.5 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.45a5.52 5.52 0 0 1-2.4 3.62v3h3.88c2.27-2.09 3.57-5.17 3.57-8.81Z" />
+      <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.94-2.9l-3.88-3.01c-1.07.72-2.45 1.15-4.06 1.15-3.13 0-5.78-2.11-6.72-4.95H1.27v3.11A12 12 0 0 0 12 24Z" />
+      <path fill="#FBBC05" d="M5.28 14.29a7.2 7.2 0 0 1 0-4.58V6.6H1.27a12 12 0 0 0 0 10.8l4.01-3.11Z" />
+      <path fill="#EA4335" d="M12 4.75c1.76 0 3.34.61 4.59 1.8l3.44-3.44A11.5 11.5 0 0 0 12 0 12 12 0 0 0 1.27 6.6l4.01 3.11C6.22 6.86 8.87 4.75 12 4.75Z" />
+    </svg>
+  );
+}
+
+function CloudSection({ focus }) {
   const { cloud } = useLibrary();
+  const sectionRef = useRef(null);
+  const emailRef = useRef(null);
   const [mode, setMode] = useState('signin'); // signin | signup
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(null);
 
+  // Opened from the navbar's Sign in button: bring the form into view once the sheet has animated in.
+  useEffect(() => {
+    if (!focus) return;
+    const timer = setTimeout(() => {
+      sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      emailRef.current?.focus({ preventScroll: true });
+    }, 260);
+    return () => clearTimeout(timer);
+  }, [focus]);
+
   if (!cloud.enabled) {
     return (
-      <Section icon={CloudOff} title="Cloud sync">
+      <Section icon={CloudOff} title="Cloud sync" sectionRef={sectionRef}>
         <p className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-relaxed text-zinc-400">
           Your library is saved on this device. To sync between phone and desktop, add your Firebase web config (
           <code className="text-accent-300">VITE_FIREBASE_*</code>, see README). Until then, use JSON export/import below.
@@ -169,7 +193,7 @@ function CloudSection() {
       await fn();
       if (success) setMessage({ text: success });
     } catch (err) {
-      setMessage({ error: true, text: authErrorMessage(err) });
+      if (!isAuthCancel(err)) setMessage({ error: true, text: authErrorMessage(err) });
     } finally {
       setBusy(false);
     }
@@ -185,7 +209,7 @@ function CloudSection() {
     }[cloud.status];
     const dot = { error: 'bg-rose-400', syncing: 'bg-amber-400', offline: 'bg-zinc-500' }[cloud.status] ?? 'bg-emerald-400';
     return (
-      <Section icon={Cloud} title="Cloud sync">
+      <Section icon={Cloud} title="Account &amp; sync" sectionRef={sectionRef}>
         <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
           <p className="text-sm">
             Signed in as <span className="font-semibold">{cloud.user.email}</span>
@@ -209,7 +233,7 @@ function CloudSection() {
 
   const isSignup = mode === 'signup';
   return (
-    <Section icon={Cloud} title="Cloud sync">
+    <Section icon={Cloud} title="Account &amp; sync" sectionRef={sectionRef}>
       <form
         className="space-y-2 rounded-2xl border border-white/10 bg-white/[0.03] p-4"
         onSubmit={(e) => {
@@ -221,7 +245,18 @@ function CloudSection() {
           {isSignup ? 'Create an account' : 'Sign in'} to sync this library between your phone and desktop. Use the same
           account on every device.
         </p>
-        <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" className={inputClass} />
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => run(cloud.signInWithGoogle)}
+          className="tactile flex w-full items-center justify-center gap-2.5 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm hover:bg-zinc-100 disabled:opacity-50"
+        >
+          <GoogleMark /> Continue with Google
+        </button>
+        <div className="flex items-center gap-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500" aria-hidden="true">
+          <span className="h-px flex-1 bg-white/10" /> or with email <span className="h-px flex-1 bg-white/10" />
+        </div>
+        <input ref={emailRef} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" className={inputClass} />
         <input
           type="password"
           required
